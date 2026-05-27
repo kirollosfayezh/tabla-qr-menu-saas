@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tabla — QR Menu SaaS (`web`)
 
-## Getting Started
+Next.js 16 + React 19 multi-tenant SaaS. Bilingual (EN/AR), RTL-aware, mobile-first.
 
-First, run the development server:
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# 1. Install deps
+pnpm install
+
+# 2. Configure env
+cp .env.example .env.local
+# Fill DATABASE_URL (Supabase/Neon), UPSTASH_REDIS_*, NEXTAUTH_SECRET (`openssl rand -base64 32`)
+
+# 3. Generate Prisma client & push schema
+pnpm prisma generate
+pnpm prisma db push
+
+# 4. Run
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture (see `../plan.md` and `../design-brief.md`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/             # Next.js App Router (thin)
+├── domain/          # Entity types
+├── dtos/            # Zod schemas + DTOs
+├── repositories/    # Data access (Prisma)
+├── services/        # Business logic
+├── controllers/     # Route handler helpers
+├── themes/          # Pluggable diner themes
+├── integrations/    # Paymob, WhatsApp, R2, Sharp adapters
+├── i18n/            # next-intl config + locale JSON
+├── lib/             # errors, logger, security, auth, tenant
+├── config/          # Typed env + constants
+├── components/      # UI only (no business logic)
+└── hooks/
+```
 
-## Learn More
+## Security
 
-To learn more about Next.js, take a look at the following resources:
+- **CSP + HSTS + XFO** set in `middleware.ts` per request, with a fresh nonce.
+- **Rate limiting** via Upstash on every edge hit + dedicated limiters for auth, payment, webhook, order endpoints (`src/lib/security/rate-limiter.ts`).
+- **Password hashing** with bcrypt (12 rounds).
+- **Input validation** with Zod at every API boundary.
+- **No `process.env` in business code** — typed access through `@/config/env`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Code quality
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- TypeScript strict mode.
+- ESLint `max-lines: 200` per file.
+- One class/component per file.
+- TSDoc on every public function/class/method.
+- All user-facing strings in `src/i18n/locales/{en,ar}.json` — no hardcoded copy.
+- Themes must use Tailwind logical utilities (`ms-`, `me-`, `ps-`, `pe-`) — enforced by ESLint.
 
-## Deploy on Vercel
+## Phase status
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- ✅ Phase 0 — Foundations
+- ⏳ Phase 1 — Core menu MVP (next)
+- Phase 2 — Theme gallery + Paymob
+- Phase 3 — Admin dashboard
+- Phase 4 — Analytics + polish

@@ -1,0 +1,103 @@
+/* Tabla — QR menu SaaS · Design tokens */
+
+:root {
+  /* Brand */
+  --brand-primary: #FF6B35;
+  --brand-primary-dark: #E5552A;
+  --brand-primary-soft: #FFE8DE;
+  --brand-accent: #1A1A2E;
+  --brand-accent-soft: #2D2D44;
+
+  /* Surfaces */
+  --surface-base: #FFFFFF;
+  --surface-raised: #FAFAFB;
+  --surface-sunken: #F4F4F6;
+  --surface-overlay: rgba(26,26,46,0.6);
+
+  /* Text */
+  --text-primary: #0F0F1A;
+  --text-secondary: #4A4A5E;
+  --text-tertiary: #8A8A9A;
+  --text-on-brand: #FFFFFF;
+
+  /* Borders */
+  --border-subtle: #E8E8EC;
+  --border-default: #D4D4DC;
+  --border-strong: #9A9AA8;
+
+  /* Semantic */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+
+  /* Spacing */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-7: 32px; --s-8: 40px;
+  --s-9: 48px; --s-10: 64px; --s-11: 80px; --s-12: 96px;
+
+  /* Radius */
+  --r-1: 4px;
+  --r-2: 8px;
+  --r-3: 12px;
+  --r-4: 16px;
+  --r-5: 24px;
+  --r-full: 999px;
+
+  /* Shadows */
+  --sh-sm: 0 1px 2px rgba(15,15,26,0.06);
+  --sh-md: 0 4px 12px rgba(15,15,26,0.08);
+  --sh-lg: 0 12px 32px rgba(15,15,26,0.12);
+  --sh-xl: 0 24px 64px rgba(15,15,26,0.18);
+  --sh-glow: 0 0 0 4px rgba(255,107,53,0.18);
+
+  /* Type */
+  --f-ui: 'Inter', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  --f-display: 'Bricolage Grotesque', 'Tajawal', 'Inter', system-ui, sans-serif;
+  --f-num: 'Inter Tight', 'Inter', tabular-nums, sans-serif;
+  --f-serif: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
+}
+
+[data-theme="dark"] {
+  --surface-base: #0F0F1A;
+  --surface-raised: #1A1A2E;
+  --surface-sunken: #08080F;
+  --text-primary: #F5F5F8;
+  --text-secondary: #B4B4C4;
+  --text-tertiary: #7C7C8E;
+  --border-subtle: #2D2D44;
+  --border-default: #3A3A52;
+  --border-strong: #56566C;
+}
+
+/* Diner theme palettes */
+[data-diner-theme="classic"] {
+  --d-bg: #FFFBF5;
+  --d-surface: #FFFFFF;
+  --d-primary: #B8341F;
+  --d-secondary: #F4E4C1;
+  --d-text: #2A1810;
+  --d-text-soft: #6B5440;
+  --d-border: #E8DBC2;
+  --d-display: 'Fraunces', 'Cormorant Garamond', serif;
+}
+[data-diner-theme="modern"] {
+  --d-bg: #FFFFFF;
+  --d-surface: #F8F8F8;
+  --d-primary: #1A1A1A;
+  --d-secondary: #FF6B35;
+  --d-text: #0A0A0A;
+  --d-text-soft: #6B6B6B;
+  --d-border: #ECECEC;
+  --d-display: 'Bricolage Grotesque', 'Inter', sans-serif;
+}
+[data-diner-theme="elegant"] {
+  --d-bg: #0F1419;
+  --d-surface: #1A1F26;
+  --d-primary: #C9A961;
+  --d-secondary: #1F2937;
+  --d-text: #F5E8C8;
+  --d-text-soft: #9C8F6E;
+  --d-border: #2A3038;
+  --d-display: 'Cormorant Garamond', 'Fraunces', serif;
+}

@@ -1,0 +1,144 @@
+'use client';
+
+import { useEffect, useState, useTransition } from 'react';
+import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
+import { placeOrderAction } from '@/app/actions/order.actions';
+import { formatPriceForLocale } from '@/themes/helpers';
+import { CartLineRow } from './cart-line-row';
+import { useCartStore } from './cart-store';
+import { useCartTotals } from './use-cart-totals';
+import { CloseIcon, WhatsappIcon } from '@/themes/classic/icons';
+import type { CartState } from './types';
+import type { RestaurantSnapshot } from '@/themes/theme.types';
+
+interface Props {
+  restaurant: RestaurantSnapshot;
+  locale: 'en' | 'ar';
+  open: boolean;
+  onClose: () => void;
+}
+
+export function CartDrawer({ restaurant, locale, open, onClose }: Props): React.JSX.Element | null {
+  const t = useTranslations('tenant.cart');
+  const target = typeof document === 'undefined' ? null : document.body;
+  const [error, setError] = useState('');
+  const [pending, startTransition] = useTransition();
+  const cart = useCartStore(restaurant.id, (state) => state);
+  const totals = useCartTotals(cart.lines, restaurant.taxPercent, restaurant.serviceChargePercent);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent): void {
+      if (event.key === 'Escape') onClose();
+    }
+    if (open) window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  if (!target || !open) return null;
+  return createPortal(
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[70] flex items-end justify-center bg-[rgba(42,24,16,0.52)] backdrop-blur-sm sm:items-center sm:px-4">
+      <button type="button" aria-label={t('back')} onClick={onClose} className="absolute inset-0" />
+      <section className="relative z-[71] flex max-h-[92vh] w-full max-w-xl flex-col rounded-t-[28px] bg-[var(--d-bg)] text-[var(--d-text)] shadow-2xl sm:rounded-[28px]">
+        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-[var(--d-border)]" />
+        <header className="flex items-center justify-between p-5 pb-2">
+          <h2 className="font-serif text-2xl font-semibold text-[var(--d-text)]">{t('view')}</h2>
+          <button type="button" aria-label={t('back')} onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--d-secondary)] text-[var(--d-primary)]"><CloseIcon size={16} /></button>
+        </header>
+        <div className="overflow-y-auto px-5">
+          {cart.lines.length === 0 ? <p className="py-10 text-center text-sm">{t('empty')}</p> : null}
+          {cart.lines.map((line) => (
+            <CartLineRow
+              key={`${line.itemId}:${line.notes}`}
+              line={line}
+              currencyCode={restaurant.currencyCode}
+              locale={locale}
+              onQty={(qty) => cart.setQty(line.itemId, line.notes, qty)}
+              onNotes={(notes) => cart.setNotes(line.itemId, line.notes, notes)}
+            />
+          ))}
+        </div>
+        <footer className="space-y-4 border-t border-[var(--d-border)] p-5">
+          <label className="block rounded-2xl bg-[var(--d-secondary)] p-4">
+            <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--d-primary)]">
+              {t('tableNumber')}
+            </span>
+            <input
+              value={cart.tableNumber}
+              onChange={(event) => cart.setTableNumber(event.target.value)}
+              placeholder={t('tableNumber')}
+              className="w-full rounded-xl border border-[var(--d-border)] bg-[var(--d-surface)] px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--d-primary)]"
+              maxLength={20}
+            />
+          </label>
+          <Totals totals={totals} currencyCode={restaurant.currencyCode} locale={locale} />
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <button
+            type="button"
+            disabled={pending || cart.lines.length === 0}
+            onClick={() => submitOrder({ restaurant, locale, cart, setError, startTransition })}
+            className="inline-flex w-full items-center justify-center gap-2.5 rounded-2xl px-4 py-4 text-sm font-bold text-white shadow-lg disabled:opacity-50"
+            style={{ backgroundColor: pending || cart.lines.length === 0 ? '#9ca3af' : '#25D366' }}
+          >
+            <WhatsappIcon size={20} />
+            {pending ? t('sending') : t('send')}
+          </button>
+        </footer>
+      </section>
+    </div>,
+    target,
+  );
+}
+
+function Totals({ totals, currencyCode, locale }: {
+  totals: ReturnType<typeof useCartTotals>;
+  currencyCode: string;
+  locale: 'en' | 'ar';
+}): React.JSX.Element {
+  const t = useTranslations('tenant.cart');
+  const rows = [['subtotal', totals.subtotalCents], ['tax', totals.taxCents], ['service', totals.serviceCents], ['total', totals.totalCents]] as const;
+  return (
+    <dl className="space-y-2 text-sm">
+      {rows.map(([key, value]) => (
+        <div key={key} className={key === 'total' ? 'flex justify-between gap-3 border-t border-[var(--d-border)] pt-3 text-base font-bold' : 'flex justify-between gap-3 text-[var(--d-text-soft)]'}>
+          <dt>{t(key)}</dt>
+          <dd className="font-semibold text-[var(--d-text)]">{formatPriceForLocale(value, currencyCode, locale)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function submitOrder(args: {
+  restaurant: RestaurantSnapshot;
+  locale: 'en' | 'ar';
+  cart: CartState;
+  setError: (value: string) => void;
+  startTransition: (callback: () => void) => void;
+}): void {
+  args.startTransition(() => {
+    void submitOrderAsync(args);
+  });
+}
+
+async function submitOrderAsync(args: {
+  restaurant: RestaurantSnapshot;
+  locale: 'en' | 'ar';
+  cart: CartState;
+  setError: (value: string) => void;
+}): Promise<void> {
+  args.setError('');
+  const result = await placeOrderAction(args.restaurant.slug, {
+    restaurantId: args.restaurant.id,
+    locale: args.locale,
+    tableNumber: args.cart.tableNumber,
+    lines: args.cart.lines.map((line) => ({ itemId: line.itemId, qty: line.qty, notes: line.notes })),
+    deviceInfo: navigator.userAgent,
+  });
+  if (!result.ok) {
+    args.setError(result.message);
+    return;
+  }
+  args.cart.clear();
+  window.open(result.value.url, '_blank', 'noopener,noreferrer');
+}
