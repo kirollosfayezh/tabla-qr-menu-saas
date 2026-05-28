@@ -10,6 +10,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ItemCard } from './item-card';
 import { isPendingId } from './use-menu-actions';
@@ -18,6 +19,9 @@ import type { CategoryView, ItemView } from './types';
 interface Props {
   category: CategoryView | null;
   items: ReadonlyArray<ItemView>;
+  /** Total items across ALL categories — used for plan limit check. */
+  allItemsCount: number;
+  maxItems: number;
   currencyCode: string;
   locale: string;
   onAdd: () => void;
@@ -29,8 +33,10 @@ interface Props {
 }
 
 export function ItemsPanel(props: Props): React.JSX.Element {
-  const { category, items, currencyCode, locale, onAdd, onEdit, onDelete, onToggle, onReorder, onBulkPrice } = props;
+  const { category, items, allItemsCount, maxItems, currencyCode, locale, onAdd, onEdit, onDelete, onToggle, onReorder, onBulkPrice } = props;
   const t = useTranslations('owner.menu');
+  const tp = useTranslations('owner.plan');
+  const atLimit = isFinite(maxItems) && allItemsCount >= maxItems;
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
   function onDragEnd(e: DragEndEvent): void {
@@ -64,12 +70,22 @@ export function ItemsPanel(props: Props): React.JSX.Element {
             type="button"
             size="sm"
             onClick={onAdd}
-            disabled={isPendingId(category.id)}
+            disabled={isPendingId(category.id) || atLimit}
+            title={atLimit ? tp('itemLimitReached', { max: maxItems }) : undefined}
           >
             {t('addItem')}
           </Button>
         </div>
       </header>
+      {atLimit && (
+        <div className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/8 px-4 py-3">
+          <span className="text-sm font-semibold text-warning">⚠</span>
+          <p className="text-sm text-text-secondary">{tp('itemLimitReached', { max: maxItems })}</p>
+          <a href="/dashboard/billing" className="ms-auto shrink-0 text-xs font-bold text-brand-primary hover:underline">
+            {tp('upgradeBtn')} →
+          </a>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border-default p-6 text-center text-sm text-text-tertiary">

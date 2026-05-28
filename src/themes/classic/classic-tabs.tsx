@@ -52,7 +52,7 @@ export function ClassicTabs({ categories, locale }: Props): React.JSX.Element {
                 className={cn(
                   'h-8 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition',
                   isActive
-                    ? 'bg-[var(--d-primary)] text-white shadow'
+                    ? 'bg-[var(--d-primary)] text-[var(--d-on-primary)] shadow'
                     : 'border border-[var(--d-border)] text-[var(--d-text-soft)] hover:bg-[var(--d-surface)]',
                 )}
               >

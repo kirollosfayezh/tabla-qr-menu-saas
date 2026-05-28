@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { formatPriceForLocale } from '@/themes/helpers';
 import { lineCount, subtotalCents, useCartStore } from './cart-store';
 import { CartDrawer } from './cart-drawer';
+import { emitAnalyticsEvent } from '@/lib/analytics/emit';
 import type { RestaurantSnapshot } from '@/themes/theme.types';
 
 interface Props {
@@ -23,7 +24,10 @@ export function CartBar({ restaurant, locale }: Props): React.JSX.Element | null
       <div className="fixed inset-x-0 bottom-0 z-50 p-4 sm:hidden">
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            emitAnalyticsEvent({ restaurantId: restaurant.id, eventType: 'ORDER_INITIATED', metadata: { lineCount: count } });
+            setOpen(true);
+          }}
           className="flex w-full items-center justify-between rounded-2xl px-5 py-4 text-sm font-bold text-white shadow-2xl"
           style={{ backgroundColor: 'var(--d-primary)' }}
         >
@@ -37,7 +41,10 @@ export function CartBar({ restaurant, locale }: Props): React.JSX.Element | null
       <div className="fixed bottom-6 end-6 z-50 hidden sm:block">
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            emitAnalyticsEvent({ restaurantId: restaurant.id, eventType: 'ORDER_INITIATED', metadata: { lineCount: count } });
+            setOpen(true);
+          }}
           className="rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-xl"
           style={{ backgroundColor: 'var(--d-primary)' }}
         >

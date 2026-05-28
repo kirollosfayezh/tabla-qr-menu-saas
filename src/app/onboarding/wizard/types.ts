@@ -1,4 +1,5 @@
 import type { Theme } from '@prisma/client';
+import type { HeroPhoto } from '@/themes/theme.types';
 
 export type StepKey = 'basics' | 'branding' | 'theme' | 'done';
 
@@ -17,6 +18,9 @@ export interface RestaurantDraft {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  heroPhotos: HeroPhoto[];
+  heroLayout: 'featured' | 'grid' | 'strip' | 'stack';
+  heroImageScale: number;
   themeId: string;
 }
 
@@ -32,6 +36,9 @@ export const EMPTY_DRAFT: RestaurantDraft = {
   primaryColor: '#FF6B35',
   secondaryColor: '#1A1A2E',
   accentColor: '#FFE8DE',
+  heroPhotos: [],
+  heroLayout: 'featured',
+  heroImageScale: 100,
   themeId: '',
 };
 

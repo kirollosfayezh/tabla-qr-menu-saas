@@ -4,12 +4,15 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ZodError } from 'zod';
 import { AuthService } from '@/services/auth.service';
-import { SignUpSchema, SignInSchema } from '@/dtos/auth.dto';
+import { PasswordResetService } from '@/services/password-reset.service';
+import { SignUpSchema, SignInSchema, ForgotPasswordSchema, ResetPasswordSchema } from '@/dtos/auth.dto';
 import { enforceRateLimit } from '@/lib/security/rate-limiter';
 import { verifyTurnstile } from '@/lib/security/turnstile';
 import { signIn } from '@/lib/auth/auth';
 import { toAppError } from '@/lib/errors/error-handler';
 import { logger } from '@/lib/logger';
+import { getLocale } from 'next-intl/server';
+import type { SupportedLocale } from '@/i18n/config';
 
 /** Discriminated-union return type for client-bound action responses. */
 export type ActionResult =
@@ -103,4 +106,46 @@ export async function signInAction(formData: FormData): Promise<ActionResult> {
 /** Begin the Google OAuth flow. */
 export async function signInWithGoogleAction(): Promise<void> {
   await signIn('google', { redirectTo: '/onboarding' });
+}
+
+/**
+ * Request a password-reset email. Always returns ok to avoid user enumeration.
+ * Rate-limited per IP via the `auth` limiter.
+ */
+export async function forgotPasswordAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const ip = await clientIp();
+    await enforceRateLimit('auth', `forgot:${ip}`);
+    const parsed = ForgotPasswordSchema.parse({
+      email: formData.get('email'),
+      turnstileToken: formData.get('turnstileToken'),
+    });
+    await verifyTurnstile(parsed.turnstileToken, ip, 'forgot');
+    const locale = ((await getLocale()) as SupportedLocale) === 'ar' ? 'ar' : 'en';
+    await new PasswordResetService().request({ email: parsed.email, locale });
+    return { ok: true };
+  } catch (err) {
+    const failure = toFailure(err);
+    logger.warn({ code: failure.code }, 'forgotPasswordAction rejected');
+    return failure;
+  }
+}
+
+/** Consume a reset token and rotate the user's password. */
+export async function resetPasswordAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const ip = await clientIp();
+    await enforceRateLimit('auth', `reset:${ip}`);
+    const parsed = ResetPasswordSchema.parse({
+      token: formData.get('token'),
+      password: formData.get('password'),
+      confirmPassword: formData.get('confirmPassword'),
+    });
+    await new PasswordResetService().consume({ token: parsed.token, newPassword: parsed.password });
+    return { ok: true, redirectTo: '/login' };
+  } catch (err) {
+    const failure = toFailure(err);
+    logger.warn({ code: failure.code }, 'resetPasswordAction rejected');
+    return failure;
+  }
 }

@@ -12,7 +12,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_SCOPES: ReadonlySet<string> = new Set(['item', 'logo']);
+const ALLOWED_SCOPES: ReadonlySet<string> = new Set(['item', 'logo', 'hero']);
 
 /**
  * POST /api/uploads/image

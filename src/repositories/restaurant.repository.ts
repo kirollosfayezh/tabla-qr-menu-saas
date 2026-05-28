@@ -8,6 +8,10 @@ export class RestaurantRepository extends BaseRepository {
     return this.db.restaurant.findFirst({ where: { ownerId } });
   }
 
+  public findById(id: string): Promise<Restaurant | null> {
+    return this.db.restaurant.findUnique({ where: { id } });
+  }
+
   /** Find a restaurant by its public slug. */
   public findBySlug(slug: string): Promise<Restaurant | null> {
     return this.db.restaurant.findUnique({ where: { slug } });
@@ -30,6 +34,10 @@ export class RestaurantRepository extends BaseRepository {
   /** Insert a new restaurant row. */
   public create(data: Prisma.RestaurantCreateInput): Promise<Restaurant> {
     return this.db.restaurant.create({ data });
+  }
+
+  public update(restaurantId: string, data: Prisma.RestaurantUpdateInput): Promise<Restaurant> {
+    return this.db.restaurant.update({ where: { id: restaurantId }, data });
   }
 
   public updateTheme(

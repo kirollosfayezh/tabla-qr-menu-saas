@@ -11,14 +11,15 @@ import {
   renameCategoryAction,
   reorderCategoriesAction,
   reorderItemsAction,
+  saveItemOptionsAction,
   toggleAvailabilityAction,
   updateItemAction,
 } from '@/app/actions/menu.actions';
 
-type Commit = (
+type Commit = <T extends { ok: boolean; message?: string }>(
   action: MenuAction,
-  runServer: () => Promise<{ ok: boolean; message?: string }>,
-) => Promise<{ ok: boolean; message?: string }>;
+  runServer: () => Promise<T>,
+) => Promise<T>;
 
 interface Deps {
   commit: Commit;
@@ -61,6 +62,7 @@ function draftToOptimisticItem(
   currencyCode: string,
   sortOrder: number,
 ): ItemView {
+  const { optionGroups: _optionGroups, ...itemDraft } = draft;
   return {
     id: tempId(),
     restaurantId: '',
@@ -68,24 +70,30 @@ function draftToOptimisticItem(
     sortOrder,
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...draft,
-    nameAr: draft.nameAr || null,
-    description: draft.description || null,
-    descriptionAr: draft.descriptionAr || null,
-    imageUrl: draft.imageUrl || null,
+    ...itemDraft,
+    nameAr: itemDraft.nameAr || null,
+    description: itemDraft.description || null,
+    descriptionAr: itemDraft.descriptionAr || null,
+    imageUrl: itemDraft.imageUrl || null,
   };
 }
 
 function mergeItem(existing: ItemView, draft: ItemDraft, id: string): ItemView {
+  const { optionGroups: _optionGroups, ...itemDraft } = draft;
   return {
     ...existing,
-    ...draft,
+    ...itemDraft,
     id,
-    nameAr: draft.nameAr || null,
-    description: draft.description || null,
-    descriptionAr: draft.descriptionAr || null,
-    imageUrl: draft.imageUrl || null,
+    nameAr: itemDraft.nameAr || null,
+    description: itemDraft.description || null,
+    descriptionAr: itemDraft.descriptionAr || null,
+    imageUrl: itemDraft.imageUrl || null,
   };
+}
+
+function itemPayload(draft: ItemDraft): Omit<ItemDraft, 'optionGroups'> {
+  const { optionGroups: _optionGroups, ...payload } = draft;
+  return payload;
 }
 
 export interface MenuActionsApi {
@@ -130,15 +138,20 @@ export function useMenuActions(deps: Deps): MenuActionsApi {
         const existing = deps.allItems.find((i) => i.id === id);
         if (!existing) return false;
         res = await commit({ type: 'updateItem', item: mergeItem(existing, draft, id) }, () =>
-          updateItemAction({ ...draft, id }),
+          updateItemAction({ ...itemPayload(draft), id }),
         );
+        if (res.ok) res = await saveItemOptionsAction({ itemId: id, groups: draft.optionGroups });
       } else {
         const item = draftToOptimisticItem(
           draft,
           deps.currencyCode,
           deps.itemsInActiveCategory.length,
         );
-        res = await commit({ type: 'addItem', item }, () => createItemAction(draft));
+        const created = await commit({ type: 'addItem', item }, () => createItemAction(itemPayload(draft)));
+        res = created;
+        if (created.ok) {
+          res = await saveItemOptionsAction({ itemId: created.value.id, groups: draft.optionGroups });
+        }
       }
       fail(res);
       return res.ok;

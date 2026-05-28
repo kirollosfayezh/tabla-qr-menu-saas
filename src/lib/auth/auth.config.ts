@@ -31,18 +31,25 @@ export const authConfig: NextAuthConfig = {
       // We do not pre-create here so the adapter manages the Account link.
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.uid = user.id;
         token.role = (user as { role?: 'OWNER' | 'ADMIN' }).role;
       }
-      // Hydrate role from DB on first OAuth login (user object may lack it).
-      if (token.uid && !token.role) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.uid as string },
-          select: { role: true },
-        });
-        if (dbUser) token.role = dbUser.role;
+      // Re-read role from DB on initial login, explicit update triggers, and once an hour
+      // afterwards so admin promotions/demotions take effect without forcing a re-login.
+      if (token.uid) {
+        const stale = !token.role || trigger === 'update' || isRoleRefreshDue(token.roleRefreshedAt as number | undefined);
+        if (stale) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.uid as string },
+            select: { role: true },
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.roleRefreshedAt = Date.now();
+          }
+        }
       }
       return token;
     },
@@ -56,3 +63,10 @@ export const authConfig: NextAuthConfig = {
   },
   trustHost: true,
 };
+
+const ROLE_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+
+function isRoleRefreshDue(lastRefreshedAt: number | undefined): boolean {
+  if (!lastRefreshedAt) return true;
+  return Date.now() - lastRefreshedAt > ROLE_REFRESH_INTERVAL_MS;
+}

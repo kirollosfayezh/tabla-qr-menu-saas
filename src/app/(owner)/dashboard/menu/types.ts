@@ -1,4 +1,5 @@
 import type { MenuCategory, MenuItem } from '@prisma/client';
+import type { OptionGroupDTO } from '@/dtos/menu.dto';
 
 /** Client-safe category view (Date → ISO string already handled by Next serialization). */
 export type CategoryView = MenuCategory;
@@ -9,6 +10,10 @@ export interface MenuPageData {
   items: ReadonlyArray<ItemView>;
   currencyCode: string;
   defaultLocale: 'en' | 'ar';
+  /** Maximum total items allowed by the restaurant's current plan. */
+  maxItems: number;
+  /** Maximum total categories allowed by the restaurant's current plan. */
+  maxCategories: number;
 }
 
 /** Default skeleton for a fresh item being created. */
@@ -21,8 +26,9 @@ export function emptyItemDraft(categoryId: string): {
   priceCents: number;
   imageUrl: string;
   isAvailable: boolean;
-  tags: string[];
-  allergens: string[];
+    tags: string[];
+    allergens: string[];
+    optionGroups: OptionGroupDTO[];
 } {
   return {
     categoryId,
@@ -35,6 +41,7 @@ export function emptyItemDraft(categoryId: string): {
     isAvailable: true,
     tags: [],
     allergens: [],
+    optionGroups: [],
   };
 }
 

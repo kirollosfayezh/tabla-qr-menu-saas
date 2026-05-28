@@ -16,10 +16,21 @@ import {
   type ThemeOption,
 } from './types';
 import { createRestaurantAction } from '@/app/actions/onboarding.actions';
+import { SLUG_MAX_LENGTH } from '@/config/constants';
 
 interface Props {
   themes: ReadonlyArray<ThemeOption>;
   rootDomain: string;
+}
+
+function slugFromName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, SLUG_MAX_LENGTH)
+    .replace(/-+$/g, '');
 }
 
 /** Top-level wizard orchestrator. Holds the draft + current step. */
@@ -38,6 +49,10 @@ export function Wizard({ themes, rootDomain }: Props): React.JSX.Element {
   const onPatch = (patch: Partial<RestaurantDraft>): void =>
     setDraft((prev) => ({ ...prev, ...patch }));
   const go = (target: StepKey): void => setStep(target);
+  const goBranding = (): void => {
+    setDraft((prev) => (prev.slug ? prev : { ...prev, slug: slugFromName(prev.name) }));
+    go('branding');
+  };
 
   const selectedTheme = useMemo(
     () => themes.find((th) => th.id === draft.themeId),
@@ -73,7 +88,7 @@ export function Wizard({ themes, rootDomain }: Props): React.JSX.Element {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
         <div className="rounded-2xl border border-border-subtle bg-surface-base p-6 shadow-sm">
           {step === 'basics' ? (
-            <StepBasics draft={draft} onChange={onPatch} onNext={() => go('branding')} />
+            <StepBasics draft={draft} onChange={onPatch} onNext={goBranding} />
           ) : null}
           {step === 'branding' ? (
             <StepBranding

@@ -36,6 +36,38 @@ export const CreateItemSchema = z.object({
 
 export const UpdateItemSchema = CreateItemSchema.extend({ id: uuid });
 
+/** One choice inside an option group (e.g. "Large +20 EGP"). */
+export const OptionChoiceSchema = z.object({
+  id: uuid.optional(),
+  label: z.string().trim().min(1).max(80),
+  labelAr: bilingualOptional.transform((v) => v ?? ''),
+  priceDeltaCents: z.coerce.number().int().min(-1_000_000).max(1_000_000),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+});
+
+/** An option group attached to an item (e.g. "Size" with min=1 max=1). */
+export const OptionGroupSchema = z
+  .object({
+    id: uuid.optional(),
+    name: z.string().trim().min(1).max(80),
+    nameAr: bilingualOptional.transform((v) => v ?? ''),
+    minSelect: z.coerce.number().int().min(0).max(20).default(0),
+    maxSelect: z.coerce.number().int().min(1).max(20).default(1),
+    required: z.boolean().default(false),
+    sortOrder: z.coerce.number().int().min(0).default(0),
+    options: z.array(OptionChoiceSchema).min(1, 'Add at least one option').max(40),
+  })
+  .refine((g) => g.maxSelect >= g.minSelect, { path: ['maxSelect'], message: 'Max must be ≥ min' });
+
+export const SaveItemOptionsSchema = z.object({
+  itemId: uuid,
+  groups: z.array(OptionGroupSchema).max(20).default([]),
+});
+
+export type OptionChoiceDTO = z.infer<typeof OptionChoiceSchema>;
+export type OptionGroupDTO = z.infer<typeof OptionGroupSchema>;
+export type SaveItemOptionsDTO = z.infer<typeof SaveItemOptionsSchema>;
+
 export const ToggleAvailabilitySchema = z.object({
   id: uuid,
   isAvailable: z.boolean(),

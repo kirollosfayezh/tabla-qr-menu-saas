@@ -20,5 +20,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     uid?: string;
     role?: 'OWNER' | 'ADMIN';
+    /** Epoch ms when role was last re-read from the DB. */
+    roleRefreshedAt?: number;
   }
 }

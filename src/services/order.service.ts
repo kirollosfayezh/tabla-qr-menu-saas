@@ -1,9 +1,10 @@
-import type { MenuItem, Prisma, Restaurant } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { OrderRepository } from '@/repositories/order.repository';
 import { PublicMenuRepository } from '@/repositories/public-menu.repository';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors/errors';
 import type { PlaceOrderDTO } from '@/dtos/order.dto';
-import type { PlacedOrder, PlacedOrderLine } from './order.types';
+import type { PlacedOrder, PlacedOrderLine, PlacedOrderSelection } from './order.types';
+import type { MenuItemSnapshot, RestaurantSnapshot } from '@/themes/theme.types';
 
 interface Deps {
   orders?: OrderRepository;
@@ -20,14 +21,13 @@ export class OrderService {
   }
 
   public async placeOrder(slug: string, input: PlaceOrderDTO): Promise<PlacedOrder> {
-    const restaurant = await this.publicMenus.findRestaurantBySlug(slug);
-    if (!restaurant) throw new NotFoundError('Restaurant');
+    const menu = await this.publicMenus.findBySlug(slug);
+    if (!menu) throw new NotFoundError('Restaurant');
+    const restaurant = menu.restaurant;
+    if (restaurant.id !== input.restaurantId) throw new ForbiddenError('Restaurant mismatch');
     if (restaurant.status !== 'ACTIVE') throw new ForbiddenError('Menu is unavailable');
 
-    const items = await this.publicMenus.listItemsByIds(
-      restaurant.id,
-      input.lines.map((line) => line.itemId),
-    );
+    const items = menu.categories.flatMap((category) => category.items);
     const lines = buildLines(input.lines, items.filter((item) => item.isAvailable));
     if (lines.length === 0) throw new ValidationError('No available items in cart');
 
@@ -37,7 +37,7 @@ export class OrderService {
     const totalCents = subtotalCents + taxCents + serviceCents;
     const order = await this.orders.create({
       restaurantId: restaurant.id,
-      tableNumber: input.tableNumber || null,
+      tableNumber: input.fulfillmentType === 'DINE_IN' ? input.tableNumber || null : null,
       items: toJsonSnapshot(lines, { subtotalCents, taxCents, serviceCents }),
       totalCents,
       currencyCode: restaurant.currencyCode,
@@ -45,7 +45,7 @@ export class OrderService {
       deviceInfo: input.deviceInfo || null,
       whatsappRedirectedAt: new Date(),
     });
-    return toPlacedOrder(order.id, restaurant, input.tableNumber || null, lines, {
+    return toPlacedOrder(order.id, restaurant, input, lines, {
       subtotalCents,
       taxCents,
       serviceCents,
@@ -54,33 +54,70 @@ export class OrderService {
   }
 }
 
-function buildLines(input: PlaceOrderDTO['lines'], items: MenuItem[]): PlacedOrderLine[] {
+function buildLines(input: PlaceOrderDTO['lines'], items: ReadonlyArray<MenuItemSnapshot>): PlacedOrderLine[] {
   const byId = new Map(items.map((item) => [item.id, item]));
   return input.flatMap((line) => {
     const item = byId.get(line.itemId);
     if (!item) return [];
+    const selections = resolveAndValidateSelections(item, line.optionIds);
+    const unitPriceCents = item.priceCents + sum(selections.map((s) => s.priceDeltaCents));
     return [{
       itemId: item.id,
       name: item.name,
       nameAr: item.nameAr,
       priceCents: item.priceCents,
+      unitPriceCents,
       qty: line.qty,
       notes: line.notes || null,
-      lineTotalCents: item.priceCents * line.qty,
+      selections,
+      lineTotalCents: unitPriceCents * line.qty,
     }];
   });
 }
 
+function resolveAndValidateSelections(item: MenuItemSnapshot, optionIds: ReadonlyArray<string>): PlacedOrderSelection[] {
+  const requested = new Set(optionIds);
+  const selections: PlacedOrderSelection[] = [];
+  for (const group of item.optionGroups) {
+    const selected = group.options.filter((option) => requested.has(option.id));
+    const minRequired = group.required ? Math.max(1, group.minSelect) : group.minSelect;
+    if (selected.length < minRequired) {
+      throw new ValidationError(`Choose ${group.name}`);
+    }
+    if (selected.length > group.maxSelect) {
+      throw new ValidationError(`Choose at most ${group.maxSelect} from ${group.name}`);
+    }
+    for (const option of selected) {
+      selections.push({
+        groupId: group.id,
+        groupName: group.name,
+        groupNameAr: group.nameAr,
+        optionId: option.id,
+        optionLabel: option.label,
+        optionLabelAr: option.labelAr,
+        priceDeltaCents: option.priceDeltaCents,
+      });
+    }
+    for (const option of selected) requested.delete(option.id);
+  }
+  if (requested.size > 0) throw new ValidationError('Invalid item option');
+  return selections;
+}
+
 function toPlacedOrder(
   orderId: string,
-  restaurant: Restaurant,
-  tableNumber: string | null,
+  restaurant: RestaurantSnapshot,
+  input: Pick<PlaceOrderDTO, 'fulfillmentType' | 'tableNumber' | 'customerName' | 'customerPhone' | 'deliveryAddress'>,
   lines: PlacedOrderLine[],
   totals: Pick<PlacedOrder, 'subtotalCents' | 'taxCents' | 'serviceCents' | 'totalCents'>,
 ): PlacedOrder {
   return {
     orderId,
-    tableNumber,
+    fulfillmentType: input.fulfillmentType,
+    tableNumber: input.fulfillmentType === 'DINE_IN' ? input.tableNumber || null : null,
+    customerName: input.customerName || null,
+    customerPhone: input.customerPhone || null,
+    deliveryAddress: input.fulfillmentType === 'DELIVERY' ? input.deliveryAddress || null : null,
     ...totals,
     currencyCode: restaurant.currencyCode,
     lines,
@@ -111,8 +148,18 @@ function toJsonSnapshot(
       name: line.name,
       nameAr: line.nameAr,
       priceCents: line.priceCents,
+      unitPriceCents: line.unitPriceCents,
       qty: line.qty,
       notes: line.notes,
+      selections: line.selections.map((selection) => ({
+        groupId: selection.groupId,
+        groupName: selection.groupName,
+        groupNameAr: selection.groupNameAr,
+        optionId: selection.optionId,
+        optionLabel: selection.optionLabel,
+        optionLabelAr: selection.optionLabelAr,
+        priceDeltaCents: selection.priceDeltaCents,
+      })),
       lineTotalCents: line.lineTotalCents,
     })),
   };

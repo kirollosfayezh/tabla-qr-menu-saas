@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
+import { listItemOptionsAction } from '@/app/actions/menu.actions';
 import { ItemFormFields } from './item-form-fields';
 import { ItemImageUploader, deleteUploadedImage } from './item-image-uploader';
+import { ItemOptionsEditor } from './item-options-editor';
 import { emptyItemDraft, type ItemDraft, type ItemView } from './types';
 import { formatPrice } from './format';
 import { applyPriceText, validateItem } from './item-validation';
@@ -35,6 +37,7 @@ function viewToDraft(view: ItemView): ItemDraft {
     isAvailable: view.isAvailable,
     tags: [...view.tags],
     allergens: [...view.allergens],
+    optionGroups: [],
   };
 }
 
@@ -71,6 +74,36 @@ export function ItemModal(props: Props): React.JSX.Element | null {
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saving, draft.imageUrl, baselineUrl]);
+
+  useEffect(() => {
+    if (!initial?.id) return;
+    let cancelled = false;
+    void listItemOptionsAction(initial.id).then((result) => {
+      if (cancelled || !result.ok) return;
+      setDraft((current) => ({
+        ...current,
+        optionGroups: result.value.groups.map((group) => ({
+          id: group.id,
+          name: group.name,
+          nameAr: group.nameAr ?? '',
+          minSelect: group.minSelect,
+          maxSelect: group.maxSelect,
+          required: group.required,
+          sortOrder: group.sortOrder,
+          options: group.options.map((option) => ({
+            id: option.id,
+            label: option.label,
+            labelAr: option.labelAr ?? '',
+            priceDeltaCents: option.priceDeltaCents,
+            sortOrder: option.sortOrder,
+          })),
+        })),
+      }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [initial?.id]);
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -124,6 +157,12 @@ export function ItemModal(props: Props): React.JSX.Element | null {
         </div>
 
         <ItemFormFields draft={draft} priceText={priceText} errors={errors} onChange={(p) => setDraft((d) => ({ ...d, ...p }))} onPriceTextChange={setPriceText} />
+
+        <ItemOptionsEditor
+          groups={draft.optionGroups}
+          currencyCode={currencyCode}
+          onChange={(optionGroups) => setDraft((d) => ({ ...d, optionGroups }))}
+        />
 
         <footer className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={cancel} disabled={saving}>

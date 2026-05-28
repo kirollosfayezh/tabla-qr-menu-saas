@@ -6,8 +6,10 @@ import { ClassicHeader } from './classic-header';
 import { ClassicTabs } from './classic-tabs';
 import { ClassicItemCard } from './classic-item-card';
 import { ClassicItemModal } from './classic-item-modal';
+import { PageViewBeacon } from './page-view-beacon';
 import { CartBar } from '@/app/t/[slug]/cart/cart-bar';
 import { localizedField } from '../helpers';
+import { emitAnalyticsEvent } from '@/lib/analytics/emit';
 import type { MenuItemSnapshot, ThemeProps } from '../theme.types';
 
 /** Classic diner page. Hero header + sticky tabs + sectioned item lists + detail modal. */
@@ -21,6 +23,7 @@ export function ClassicPage({ restaurant, categories, locale }: ThemeProps): Rea
       data-diner-theme="classic"
       className="min-h-screen bg-[var(--d-bg)] pb-28 text-[var(--d-text)]"
     >
+      <PageViewBeacon restaurantId={restaurant.id} />
       <ClassicHeader restaurant={restaurant} locale={locale} />
       {categories.length > 0 ? (
         <ClassicTabs categories={categories} locale={locale} />
@@ -45,7 +48,10 @@ export function ClassicPage({ restaurant, categories, locale }: ThemeProps): Rea
                     restaurantId={restaurant.id}
                     currencyCode={restaurant.currencyCode}
                     locale={locale}
-                    onOpen={() => setOpened(item)}
+                    onOpen={() => {
+                      emitAnalyticsEvent({ restaurantId: restaurant.id, eventType: 'ITEM_VIEW', metadata: { itemId: item.id } });
+                      setOpened(item);
+                    }}
                   />
                 ))}
               </div>

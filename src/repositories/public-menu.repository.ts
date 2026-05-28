@@ -1,6 +1,7 @@
 import { BaseRepository } from './base.repository';
 import type { MenuItem, Restaurant } from '@prisma/client';
-import type { CategoryWithItems, RestaurantSnapshot } from '@/themes/theme.types';
+import type { CategoryWithItems, MenuItemOptionGroupSnapshot, RestaurantSnapshot } from '@/themes/theme.types';
+import { parseHeroPhotos } from '@/lib/hero-photos';
 
 interface FullMenu {
   restaurant: RestaurantSnapshot;
@@ -14,8 +15,8 @@ interface FullMenu {
  */
 export class PublicMenuRepository extends BaseRepository {
   public async findBySlug(slug: string): Promise<FullMenu | null> {
-    const row = await this.db.restaurant.findUnique({
-      where: { slug },
+    const row = await this.db.restaurant.findFirst({
+      where: { slug, status: 'ACTIVE', publishedAt: { not: null } },
       include: {
         theme: { select: { key: true } },
         categories: {
@@ -44,12 +45,19 @@ export class PublicMenuRepository extends BaseRepository {
       primaryColor: row.primaryColor,
       secondaryColor: row.secondaryColor,
       accentColor: row.accentColor,
+      heroPhotos: parseHeroPhotos(row.heroPhotos ?? [], row.heroImageUrls),
+      heroLayout: toHeroLayout(row.heroLayout),
+      heroImageScale: row.heroImageScale,
       currencyCode: row.currencyCode,
       taxPercent: Number(row.taxPercent),
       serviceChargePercent: Number(row.serviceChargePercent),
       status: row.status,
       themeKey: row.theme?.key ?? 'classic',
     };
+
+    const allItemIds: string[] = [];
+    for (const cat of row.categories) for (const it of cat.items) allItemIds.push(it.id);
+    const optionsByItem = await this.fetchOptionGroupsForItems(allItemIds);
 
     const categories: CategoryWithItems[] = row.categories.map((cat) => ({
       id: cat.id,
@@ -67,10 +75,78 @@ export class PublicMenuRepository extends BaseRepository {
         isAvailable: it.isAvailable,
         tags: it.tags,
         allergens: it.allergens,
+        optionGroups: optionsByItem.get(it.id) ?? [],
       })),
     }));
 
     return { restaurant, categories };
+  }
+
+  /**
+   * Bulk fetch option groups + options for many items in two raw queries.
+   * Empty input or missing tables (db:push pending) returns an empty map gracefully.
+   */
+  private async fetchOptionGroupsForItems(itemIds: ReadonlyArray<string>): Promise<Map<string, MenuItemOptionGroupSnapshot[]>> {
+    const result = new Map<string, MenuItemOptionGroupSnapshot[]>();
+    if (itemIds.length === 0) return result;
+    try {
+      const groupRows = await this.db.$queryRawUnsafe<Array<{
+        id: string;
+        item_id: string;
+        name: string;
+        name_ar: string | null;
+        min_select: number;
+        max_select: number;
+        required: boolean;
+      }>>(
+        `SELECT id, item_id, name, name_ar, min_select, max_select, required
+         FROM menu_item_option_groups
+         WHERE item_id = ANY($1::uuid[])
+         ORDER BY sort_order ASC, created_at ASC`,
+        [...itemIds],
+      );
+      if (groupRows.length === 0) return result;
+      const groupIds = groupRows.map((g) => g.id);
+      const optionRows = await this.db.$queryRawUnsafe<Array<{
+        id: string;
+        group_id: string;
+        label: string;
+        label_ar: string | null;
+        price_delta_cents: number;
+      }>>(
+        `SELECT id, group_id, label, label_ar, price_delta_cents
+         FROM menu_item_options
+         WHERE group_id = ANY($1::uuid[])
+         ORDER BY sort_order ASC, created_at ASC`,
+        groupIds,
+      );
+      const optionsByGroup = new Map<string, Array<{ id: string; label: string; labelAr: string | null; priceDeltaCents: number }>>();
+      for (const id of groupIds) optionsByGroup.set(id, []);
+      for (const o of optionRows) {
+        optionsByGroup.get(o.group_id)?.push({
+          id: o.id,
+          label: o.label,
+          labelAr: o.label_ar,
+          priceDeltaCents: o.price_delta_cents,
+        });
+      }
+      for (const g of groupRows) {
+        const list = result.get(g.item_id) ?? [];
+        list.push({
+          id: g.id,
+          name: g.name,
+          nameAr: g.name_ar,
+          minSelect: g.min_select,
+          maxSelect: g.max_select,
+          required: g.required,
+          options: optionsByGroup.get(g.id) ?? [],
+        });
+        result.set(g.item_id, list);
+      }
+    } catch {
+      // Tables not migrated yet — return empty map; items render without options.
+    }
+    return result;
   }
 
   /** Active theme keys assigned to at least one ACTIVE restaurant. Used by the boot-time sync check. */
@@ -95,4 +171,8 @@ export class PublicMenuRepository extends BaseRepository {
       where: { restaurantId, id: { in: [...itemIds] } },
     });
   }
+}
+
+function toHeroLayout(value: string): RestaurantSnapshot['heroLayout'] {
+  return value === 'grid' || value === 'strip' || value === 'stack' ? value : 'featured';
 }

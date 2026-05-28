@@ -7,3 +7,6 @@
  * `ThemeRegistry.register(...)` is what wires it in.
  */
 import './classic';
+import './modern';
+import './elegant';
+import './showcase';

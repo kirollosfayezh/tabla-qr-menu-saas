@@ -15,6 +15,10 @@ export class ThemeRepository extends BaseRepository {
     return this.db.theme.findUnique({ where: { id } });
   }
 
+  public findByKey(key: string): Promise<Theme | null> {
+    return this.db.theme.findUnique({ where: { key } });
+  }
+
   public listActivePackages(): Promise<Array<ThemePackage & { themes: Array<{ theme: Theme }> }>> {
     return this.db.themePackage.findMany({
       where: { isActive: true },

@@ -1,7 +1,12 @@
 import { env } from '@/config/env';
 import { PAYMOB_PAYMENT_EXPIRATION_SECONDS } from '@/config/constants';
 import { PaymentError } from '@/lib/errors/errors';
-import type { PaymobCheckout, PaymobCheckoutInput } from './paymob.types';
+import type {
+  PaymobCheckout,
+  PaymobCheckoutInput,
+  PaymobRefundInput,
+  PaymobRefundResult,
+} from './paymob.types';
 
 const BASE_URL = 'https://accept.paymob.com/api';
 
@@ -15,6 +20,24 @@ export class PaymobAdapter {
       providerOrderId: String(providerOrderId),
       iframeUrl: `${BASE_URL}/acceptance/iframes/${env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}`,
     };
+  }
+
+  /**
+   * Refund a Paymob transaction in full or partial.
+   * Calls `/acceptance/void_refund/refund` with an auth token; throws on any non-2xx.
+   */
+  public async refund(input: PaymobRefundInput): Promise<PaymobRefundResult> {
+    this.assertConfigured();
+    const authToken = await this.authenticate();
+    const body = await postJson(`${BASE_URL}/acceptance/void_refund/refund`, {
+      auth_token: authToken,
+      transaction_id: Number(input.transactionId),
+      amount_cents: input.amountCents,
+    });
+    const refundId = isRecord(body) && (typeof body.id === 'number' || typeof body.id === 'string') ? String(body.id) : null;
+    if (!refundId) throw new PaymentError('Invalid Paymob refund response');
+    const success = isRecord(body) && body.success === true;
+    return { refundTransactionId: refundId, success };
   }
 
   private assertConfigured(): void {

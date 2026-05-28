@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CategoryRow } from './category-row';
@@ -18,6 +19,7 @@ import type { CategoryView } from './types';
 
 interface Props {
   categories: ReadonlyArray<CategoryView>;
+  maxCategories: number;
   activeId: string | null;
   onSelect: (id: string) => void;
   onCreate: (name: string) => Promise<void>;
@@ -27,8 +29,10 @@ interface Props {
 }
 
 export function CategoriesPanel(props: Props): React.JSX.Element {
-  const { categories, activeId, onSelect, onCreate, onRename, onDelete, onReorder } = props;
+  const { categories, maxCategories, activeId, onSelect, onCreate, onRename, onDelete, onReorder } = props;
   const t = useTranslations('owner.menu');
+  const tp = useTranslations('owner.plan');
+  const atCatLimit = categories.length >= maxCategories;
   const [draft, setDraft] = useState('');
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
@@ -52,10 +56,18 @@ export function CategoriesPanel(props: Props): React.JSX.Element {
   return (
     <section className="flex w-full flex-col gap-3 rounded-2xl border border-border-subtle bg-surface-base p-4 lg:max-w-xs">
       <h2 className="font-display text-base font-semibold text-text-primary">{t('title')}</h2>
-      <form onSubmit={submit} className="flex gap-2">
-        <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t('newCategory')} />
-        <Button type="submit" size="sm">{t('addCategory')}</Button>
-      </form>
+      {atCatLimit ? (
+        <div className="rounded-lg border border-warning/30 bg-warning/8 px-3 py-2 text-xs text-text-secondary">
+          {tp('categoryLimitReached', { max: maxCategories })}
+          {' '}
+          <Link href="/dashboard/billing" className="font-bold text-brand-primary hover:underline">{tp('upgradeBtn')} →</Link>
+        </div>
+      ) : (
+        <form onSubmit={submit} className="flex gap-2">
+          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t('newCategory')} />
+          <Button type="submit" size="sm">{t('addCategory')}</Button>
+        </form>
+      )}
       {categories.length === 0 ? (
         <p className="text-xs text-text-tertiary">{t('noCategories')}</p>
       ) : (

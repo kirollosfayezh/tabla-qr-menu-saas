@@ -3,7 +3,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { CART_MAX_QTY, CART_MIN_QTY } from '@/config/constants';
-import type { CartItemInput, CartState } from './types';
+import { lineKey, type CartItemInput, type CartLine, type CartSelection, type CartState } from './types';
 
 const stores = new Map<string, UseBoundStore<StoreApi<CartState>>>();
 
@@ -14,11 +14,16 @@ export function useCartStore<T>(
   return getCartStore(restaurantId)(selector);
 }
 
-export function subtotalCents(lines: CartState['lines']): number {
-  return lines.reduce((total, line) => total + line.priceCents * line.qty, 0);
+/** Effective unit price for a cart line, including selected option deltas. */
+export function unitPriceCents(line: CartLine): number {
+  return line.priceCents + (line.selections ?? []).reduce((sum, s) => sum + s.priceDeltaCents, 0);
 }
 
-export function lineCount(lines: CartState['lines']): number {
+export function subtotalCents(lines: ReadonlyArray<CartLine>): number {
+  return lines.reduce((total, line) => total + unitPriceCents(line) * line.qty, 0);
+}
+
+export function lineCount(lines: ReadonlyArray<CartLine>): number {
   return lines.reduce((total, line) => total + line.qty, 0);
 }
 
@@ -31,15 +36,18 @@ function getCartStore(restaurantId: string): UseBoundStore<StoreApi<CartState>> 
         restaurantId,
         lines: [],
         tableNumber: '',
-        add: (item, qty, notes) => set((state) => addLine(state, item, qty, notes)),
-        setQty: (itemId, notes, qty) => set((state) => setQty(state, itemId, notes, qty)),
-        setNotes: (itemId, oldNotes, notes) => set((state) => setNotes(state, itemId, oldNotes, notes)),
+        add: (item, qty, notes, selections) =>
+          set((state) => addLine(state, item, qty, notes, selections)),
+        setQty: (key, qty) => set((state) => setQtyState(state, key, qty)),
+        setNotes: (key, notes) => set((state) => setNotesState(state, key, notes)),
         setTableNumber: (tableNumber) => set({ tableNumber }),
         clear: () => set({ lines: [], tableNumber: '' }),
       }),
       {
         name: `tabla.cart.${restaurantId}`,
         storage: createJSONStorage(() => sessionStorage),
+        version: 1,
+        migrate: (persisted) => migrateCartState(persisted, restaurantId),
         partialize: (state) => ({
           restaurantId: state.restaurantId,
           lines: state.lines,
@@ -52,43 +60,64 @@ function getCartStore(restaurantId: string): UseBoundStore<StoreApi<CartState>> 
   return store;
 }
 
-function addLine(state: CartState, item: CartItemInput, qty: number, notes: string): Partial<CartState> {
+function migrateCartState(persisted: unknown, restaurantId: string): Partial<CartState> {
+  if (!persisted || typeof persisted !== 'object') return { restaurantId, lines: [], tableNumber: '' };
+  const state = persisted as Partial<CartState>;
+  return {
+    restaurantId,
+    tableNumber: typeof state.tableNumber === 'string' ? state.tableNumber : '',
+    lines: Array.isArray(state.lines)
+      ? state.lines.map((line) => ({ ...line, selections: line.selections ?? [] }))
+      : [],
+  };
+}
+
+function addLine(
+  state: CartState,
+  item: CartItemInput,
+  qty: number,
+  notes: string,
+  selections: ReadonlyArray<CartSelection>,
+): Partial<CartState> {
   const cleanNotes = notes.trim();
   const nextQty = clampQty(qty);
-  const existing = state.lines.find((line) => sameLine(line.itemId, line.notes, item.id, cleanNotes));
-  if (!existing) {
-    return { lines: [...state.lines, { itemId: item.id, name: item.name, nameAr: item.nameAr, priceCents: item.priceCents, qty: nextQty, notes: cleanNotes, imageUrl: item.imageUrl }] };
-  }
+  const candidate: CartLine = {
+    itemId: item.id,
+    name: item.name,
+    nameAr: item.nameAr,
+    priceCents: item.priceCents,
+    qty: nextQty,
+    notes: cleanNotes,
+    imageUrl: item.imageUrl,
+    selections: [...selections],
+  };
+  const key = lineKey(candidate);
+  const existing = state.lines.find((line) => lineKey(line) === key);
+  if (!existing) return { lines: [...state.lines, candidate] };
   return {
     lines: state.lines.map((line) =>
-      sameLine(line.itemId, line.notes, item.id, cleanNotes)
-        ? { ...line, qty: clampQty(line.qty + nextQty) }
-        : line,
+      lineKey(line) === key ? { ...line, qty: clampQty(line.qty + nextQty) } : line,
     ),
   };
 }
 
-function setQty(state: CartState, itemId: string, notes: string, qty: number): Partial<CartState> {
+function setQtyState(state: CartState, key: string, qty: number): Partial<CartState> {
   if (qty < CART_MIN_QTY) {
-    return { lines: state.lines.filter((line) => !sameLine(line.itemId, line.notes, itemId, notes)) };
+    return { lines: state.lines.filter((line) => lineKey(line) !== key) };
   }
   return {
     lines: state.lines.map((line) =>
-      sameLine(line.itemId, line.notes, itemId, notes) ? { ...line, qty: clampQty(qty) } : line,
+      lineKey(line) === key ? { ...line, qty: clampQty(qty) } : line,
     ),
   };
 }
 
-function setNotes(state: CartState, itemId: string, oldNotes: string, notes: string): Partial<CartState> {
+function setNotesState(state: CartState, key: string, notes: string): Partial<CartState> {
   return {
     lines: state.lines.map((line) =>
-      sameLine(line.itemId, line.notes, itemId, oldNotes) ? { ...line, notes: notes.trim() } : line,
+      lineKey(line) === key ? { ...line, notes: notes.trim() } : line,
     ),
   };
-}
-
-function sameLine(leftId: string, leftNotes: string, rightId: string, rightNotes: string): boolean {
-  return leftId === rightId && leftNotes === rightNotes;
 }
 
 function clampQty(qty: number): number {

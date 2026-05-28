@@ -31,3 +31,23 @@ export const SignInSchema = z.object({
 });
 
 export type SignInDTO = z.infer<typeof SignInSchema>;
+
+/** Forgot-password request payload. */
+export const ForgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Enter a valid email'),
+  turnstileToken: z.string().min(1, 'Bot check required'),
+});
+export type ForgotPasswordDTO = z.infer<typeof ForgotPasswordSchema>;
+
+/** Reset-password completion payload. */
+export const ResetPasswordSchema = z
+  .object({
+    token: z.string().min(32, 'Invalid reset link'),
+    password: passwordRules,
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Passwords do not match',
+  });
+export type ResetPasswordDTO = z.infer<typeof ResetPasswordSchema>;

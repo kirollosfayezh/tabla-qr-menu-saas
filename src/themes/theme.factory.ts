@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 import { ThemeNotFoundError } from '@/lib/errors/errors';
 import { FALLBACK_THEME_KEY, ThemeRegistry } from './theme.registry';
 import type { ITheme } from './theme.types';
@@ -18,7 +17,7 @@ export const ThemeFactory = {
     if (!fallback) {
       throw new ThemeNotFoundError(key);
     }
-    logger.warn({ requested: key, fallback: FALLBACK_THEME_KEY }, 'theme not registered; falling back');
+    console.warn('theme not registered; falling back', { requested: key, fallback: FALLBACK_THEME_KEY });
     return fallback;
   },
   createStrict(key: string): ITheme {

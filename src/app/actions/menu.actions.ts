@@ -13,9 +13,11 @@ import {
   RenameCategorySchema,
   ReorderItemsSchema,
   ReorderSchema,
+  SaveItemOptionsSchema,
   ToggleAvailabilitySchema,
   UpdateItemSchema,
 } from '@/dtos/menu.dto';
+import type { OptionGroupRow } from '@/repositories/menu-item-options.repository';
 
 export type ActionResult<T = undefined> =
   | { ok: true; value: T }
@@ -168,6 +170,30 @@ export async function bulkPriceUpdateAction(
     );
     bust();
     return { ok: true, value: { updated } };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** List the option groups + options for one item (owner-only). */
+export async function listItemOptionsAction(itemId: string): Promise<ActionResult<{ groups: OptionGroupRow[] }>> {
+  try {
+    const ctx = await requireOwnerRestaurant();
+    const groups = await new MenuService().listOptionGroups(ctx.restaurantId, itemId);
+    return { ok: true, value: { groups } };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Bulk-replace the option groups for one item. */
+export async function saveItemOptionsAction(input: unknown): Promise<ActionResult> {
+  try {
+    const ctx = await requireOwnerRestaurant();
+    const parsed = SaveItemOptionsSchema.parse(input);
+    await new MenuService().saveOptionGroups(ctx.restaurantId, parsed);
+    bust();
+    return { ok: true, value: undefined };
   } catch (err) {
     return fail(err);
   }

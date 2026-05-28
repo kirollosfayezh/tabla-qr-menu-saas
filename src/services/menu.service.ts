@@ -1,17 +1,20 @@
 import type { MenuCategory, MenuItem } from '@prisma/client';
 import { CategoryRepository } from '@/repositories/category.repository';
 import { MenuItemRepository } from '@/repositories/menu-item.repository';
+import { MenuItemOptionsRepository, type OptionGroupRow } from '@/repositories/menu-item-options.repository';
 import { NotFoundError, ValidationError } from '@/lib/errors/errors';
 import type {
   CreateCategoryDTO,
   CreateItemDTO,
   RenameCategoryDTO,
+  SaveItemOptionsDTO,
   UpdateItemDTO,
 } from '@/dtos/menu.dto';
 
 interface Deps {
   categories?: CategoryRepository;
   items?: MenuItemRepository;
+  options?: MenuItemOptionsRepository;
 }
 
 /**
@@ -22,10 +25,41 @@ interface Deps {
 export class MenuService {
   private readonly categories: CategoryRepository;
   private readonly items: MenuItemRepository;
+  private readonly options: MenuItemOptionsRepository;
 
   constructor(deps: Deps = {}) {
     this.categories = deps.categories ?? new CategoryRepository();
     this.items = deps.items ?? new MenuItemRepository();
+    this.options = deps.options ?? new MenuItemOptionsRepository();
+  }
+
+  /** List option groups for one item. Tenant-checks by verifying the item belongs to the restaurant. */
+  public async listOptionGroups(restaurantId: string, itemId: string): Promise<OptionGroupRow[]> {
+    const item = await this.items.findById(itemId, restaurantId);
+    if (!item) throw new NotFoundError('Menu item');
+    return this.options.listForItem(itemId);
+  }
+
+  /** Bulk-replace option groups for one item. */
+  public async saveOptionGroups(restaurantId: string, input: SaveItemOptionsDTO): Promise<void> {
+    const item = await this.items.findById(input.itemId, restaurantId);
+    if (!item) throw new NotFoundError('Menu item');
+    await this.options.replaceForItem(input.itemId, input.groups.map((g, gi) => ({
+      id: g.id,
+      name: g.name,
+      nameAr: g.nameAr || null,
+      minSelect: g.minSelect,
+      maxSelect: g.maxSelect,
+      required: g.required,
+      sortOrder: gi,
+      options: g.options.map((o, oi) => ({
+        id: o.id,
+        label: o.label,
+        labelAr: o.labelAr || null,
+        priceDeltaCents: o.priceDeltaCents,
+        sortOrder: oi,
+      })),
+    })));
   }
 
   public listCategories(restaurantId: string): Promise<MenuCategory[]> {

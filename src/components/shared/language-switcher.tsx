@@ -3,21 +3,60 @@
 import { useTransition } from 'react';
 import { useLocale } from 'next-intl';
 import { setLocaleCookie } from '@/app/actions/locale.action';
+import { cn } from '@/lib/cn';
 
-/** Toggles the active UI locale between English and Arabic. */
+/** Two-pill EN / AR language switcher. Active locale is highlighted. */
 export function LanguageSwitcher(): React.JSX.Element {
   const locale = useLocale();
   const [pending, start] = useTransition();
-  const next = locale === 'ar' ? 'en' : 'ar';
-  const label = locale === 'ar' ? 'English' : 'العربية';
 
+  function switchTo(next: string): void {
+    if (next === locale) return;
+    start(() => setLocaleCookie(next));
+  }
+
+  return (
+    <div
+      className="flex items-center rounded-full border border-border-subtle bg-surface-raised p-0.5"
+      role="group"
+      aria-label="Language"
+    >
+      <LangPill
+        label="EN"
+        active={locale === 'en'}
+        disabled={pending}
+        onClick={() => switchTo('en')}
+      />
+      <LangPill
+        label="عر"
+        active={locale === 'ar'}
+        disabled={pending}
+        onClick={() => switchTo('ar')}
+      />
+    </div>
+  );
+}
+
+interface PillProps {
+  label: string;
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}
+
+function LangPill({ label, active, disabled, onClick }: PillProps): React.JSX.Element {
   return (
     <button
       type="button"
-      disabled={pending}
-      onClick={() => start(() => setLocaleCookie(next))}
-      className="rounded-full border border-border-default px-3.5 h-9 text-xs font-medium text-text-secondary transition hover:bg-surface-raised"
-      aria-label="Switch language"
+      disabled={disabled}
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'h-7 rounded-full px-3 text-xs font-semibold transition',
+        active
+          ? 'bg-white text-text-primary shadow-sm'
+          : 'text-text-tertiary hover:text-text-secondary',
+      )}
     >
       {label}
     </button>

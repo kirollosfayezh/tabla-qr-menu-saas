@@ -11,13 +11,27 @@ export interface OrderMessageLine {
   name: string;
   nameAr: string | null;
   priceCents: number;
+  unitPriceCents?: number;
+  selections?: ReadonlyArray<OrderMessageSelection>;
   lineTotalCents: number;
   notes: string | null;
 }
 
+export interface OrderMessageSelection {
+  groupName: string;
+  groupNameAr: string | null;
+  optionLabel: string;
+  optionLabelAr: string | null;
+  priceDeltaCents: number;
+}
+
 export interface OrderMessageSnapshot {
   id: string;
+  fulfillmentType: 'DINE_IN' | 'DELIVERY';
   tableNumber: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  deliveryAddress: string | null;
   subtotalCents: number;
   taxCents: number;
   serviceCents: number;

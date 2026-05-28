@@ -26,3 +26,15 @@ export interface PaymobCheckout {
   providerOrderId: string;
   iframeUrl: string;
 }
+
+export interface PaymobRefundInput {
+  /** Paymob transaction id, NOT the local payment id. */
+  transactionId: string;
+  /** Refund amount in cents. Must be ≤ the original transaction amount. */
+  amountCents: number;
+}
+
+export interface PaymobRefundResult {
+  refundTransactionId: string;
+  success: boolean;
+}

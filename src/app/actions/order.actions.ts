@@ -31,7 +31,11 @@ export async function placeOrderAction(
     const placed = await new OrderService().placeOrder(slug, parsed);
     const order = {
       id: placed.orderId,
+      fulfillmentType: placed.fulfillmentType,
       tableNumber: placed.tableNumber,
+      customerName: placed.customerName,
+      customerPhone: placed.customerPhone,
+      deliveryAddress: placed.deliveryAddress,
       subtotalCents: placed.subtotalCents,
       taxCents: placed.taxCents,
       serviceCents: placed.serviceCents,

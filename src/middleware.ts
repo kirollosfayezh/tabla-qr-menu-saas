@@ -67,7 +67,7 @@ function isSystemPath(segment: string): boolean {
   const systemPaths = new Set([
     'api', 'admin', 'dashboard', 'login', 'signup', 'auth', 'onboarding', 't', 'o',
     'payments',
-    'pricing', 'about', 'contact', 'terms', 'privacy', '_next',
+    'pricing', 'about', 'contact', 'terms', 'privacy', 'refunds', 'cookies', '_next',
     'favicon.ico', 'robots.txt', 'sitemap.xml',
   ]);
   return systemPaths.has(segment);

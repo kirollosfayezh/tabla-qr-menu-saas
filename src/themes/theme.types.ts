@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react';
 
+/** A hero photo with persisted transforms applied by the studio editor. */
+export interface HeroPhoto {
+  url: string;
+  rotation: 0 | 90 | 180 | 270;
+  flipX: boolean;
+  flipY: boolean;
+}
+
 /** Restaurant data the diner page actually needs. Pruned from the Prisma model so themes can't accidentally read sensitive fields. */
 export interface RestaurantSnapshot {
   id: string;
@@ -14,12 +22,32 @@ export interface RestaurantSnapshot {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  heroPhotos: ReadonlyArray<HeroPhoto>;
+  heroLayout: 'featured' | 'grid' | 'strip' | 'stack';
+  heroImageScale: number;
   currencyCode: string;
   taxPercent: number;
   serviceChargePercent: number;
   status: 'PENDING_PAYMENT' | 'ACTIVE' | 'SUSPENDED';
   /** Active theme key (resolved from Restaurant.theme.key). */
   themeKey: string;
+}
+
+export interface MenuItemOptionSnapshot {
+  id: string;
+  label: string;
+  labelAr: string | null;
+  priceDeltaCents: number;
+}
+
+export interface MenuItemOptionGroupSnapshot {
+  id: string;
+  name: string;
+  nameAr: string | null;
+  minSelect: number;
+  maxSelect: number;
+  required: boolean;
+  options: ReadonlyArray<MenuItemOptionSnapshot>;
 }
 
 export interface MenuItemSnapshot {
@@ -34,6 +62,7 @@ export interface MenuItemSnapshot {
   isAvailable: boolean;
   tags: ReadonlyArray<string>;
   allergens: ReadonlyArray<string>;
+  optionGroups: ReadonlyArray<MenuItemOptionGroupSnapshot>;
 }
 
 export interface CategoryWithItems {

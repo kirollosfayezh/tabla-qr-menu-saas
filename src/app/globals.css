@@ -61,3 +61,19 @@ html[dir="rtl"] body {
 .no-scrollbar {
   scrollbar-width: none;
 }
+
+/* Trust bar marquee */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 14s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}

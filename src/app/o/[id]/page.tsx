@@ -15,8 +15,18 @@ const OrderLineSchema = z.object({
   name: z.string(),
   nameAr: z.string().nullable(),
   priceCents: z.number().int(),
+  unitPriceCents: z.number().int().optional(),
   qty: z.number().int(),
   notes: z.string().nullable(),
+  selections: z.array(z.object({
+    groupId: z.string(),
+    groupName: z.string(),
+    groupNameAr: z.string().nullable(),
+    optionId: z.string(),
+    optionLabel: z.string(),
+    optionLabelAr: z.string().nullable(),
+    priceDeltaCents: z.number().int(),
+  })).default([]),
   lineTotalCents: z.number().int(),
 });
 
@@ -47,7 +57,11 @@ export default async function OrderSummaryPage({ params }: PageProps): Promise<R
     locale,
     order: {
       id: order.id,
+      fulfillmentType: 'DINE_IN',
       tableNumber: order.tableNumber,
+      customerName: null,
+      customerPhone: null,
+      deliveryAddress: null,
       subtotalCents: snapshot.subtotalCents,
       taxCents: snapshot.taxCents,
       serviceCents: snapshot.serviceCents,

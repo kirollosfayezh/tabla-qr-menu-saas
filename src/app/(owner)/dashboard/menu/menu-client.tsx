@@ -44,6 +44,7 @@ export function MenuClient({ data }: { data: MenuPageData }): React.JSX.Element 
       <div className="flex flex-col gap-4 lg:flex-row">
         <CategoriesPanel
           categories={state.categories}
+          maxCategories={data.maxCategories}
           activeId={activeCategory?.id ?? null}
           onSelect={setActiveId}
           onCreate={actions.addCategory}
@@ -54,6 +55,8 @@ export function MenuClient({ data }: { data: MenuPageData }): React.JSX.Element 
         <ItemsPanel
           category={activeCategory}
           items={visibleItems}
+          allItemsCount={state.items.length}
+          maxItems={data.maxItems}
           currencyCode={data.currencyCode}
           locale={locale}
           onAdd={() =>

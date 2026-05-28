@@ -17,6 +17,7 @@ export const metadata = { title: 'Onboarding · Tabla' };
 export default async function OnboardingPage(): Promise<React.JSX.Element> {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+  if (session.user.role === 'ADMIN') redirect('/admin');
 
   const restaurants = new RestaurantRepository();
   const existing = await restaurants.findByOwnerId(session.user.id);

@@ -93,19 +93,19 @@ function applyPrice(current: number, mode: 'percent' | 'absolute', value: number
  */
 export function useMenuState(base: MenuState): {
   state: MenuState;
-  commit: (
+  commit: <T extends { ok: boolean; message?: string }>(
     action: MenuAction,
-    runServer: () => Promise<{ ok: boolean; message?: string }>,
-  ) => Promise<{ ok: boolean; message?: string }>;
+    runServer: () => Promise<T>,
+  ) => Promise<T>;
   pending: boolean;
 } {
   const [optimistic, addOptimistic] = useOptimistic(base, applyAction);
   const [pending, startTransition] = useTransition();
 
-  function commit(
+  function commit<T extends { ok: boolean; message?: string }>(
     action: MenuAction,
-    runServer: () => Promise<{ ok: boolean; message?: string }>,
-  ): Promise<{ ok: boolean; message?: string }> {
+    runServer: () => Promise<T>,
+  ): Promise<T> {
     return new Promise((resolve) => {
       startTransition(async () => {
         addOptimistic(action);

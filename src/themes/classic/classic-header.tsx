@@ -1,4 +1,5 @@
 import { localizedField } from '../helpers';
+import { HeroStrip } from '../shared/hero-strip';
 import type { RestaurantSnapshot } from '../theme.types';
 import { ClassicHeaderActions, ClassicTableBadge } from './header-actions';
 
@@ -38,6 +39,13 @@ export function ClassicHeader({ restaurant, locale }: Props): React.JSX.Element 
         </p>
       ) : null}
       <ClassicTableBadge restaurantId={restaurant.id} locale={locale} />
+      <HeroStrip
+        photos={restaurant.heroPhotos}
+        layout={restaurant.heroLayout}
+        scale={restaurant.heroImageScale}
+        containerClass="mx-auto mt-5 max-w-md"
+        imageClass="rounded-[18px]"
+      />
     </header>
   );
 }

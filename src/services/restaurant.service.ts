@@ -3,7 +3,7 @@ import { RestaurantRepository } from '@/repositories/restaurant.repository';
 import { ThemeRepository } from '@/repositories/theme.repository';
 import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/errors';
 import { RESERVED_SUBDOMAINS } from '@/config/constants';
-import type { CreateRestaurantDTO } from '@/dtos/restaurant.dto';
+import type { CreateRestaurantDTO, UpdateBrandingDTO, UpdateSettingsDTO } from '@/dtos/restaurant.dto';
 
 export interface SlugCheck {
   available: boolean;
@@ -69,6 +69,35 @@ export class RestaurantService {
       publishedAt: isFree ? new Date() : null,
       owner: { connect: { id: ownerId } },
       theme: { connect: { id: theme.id } },
+    });
+  }
+
+  /** Update branding fields (name, tagline, logo, colors). */
+  public async updateBranding(restaurantId: string, input: UpdateBrandingDTO): Promise<Restaurant> {
+    return this.restaurants.update(restaurantId, {
+      name: input.name,
+      nameAr: emptyToNull(input.nameAr),
+      description: emptyToNull(input.description),
+      descriptionAr: emptyToNull(input.descriptionAr),
+      logoUrl: emptyToNull(input.logoUrl),
+      primaryColor: input.primaryColor,
+      secondaryColor: input.secondaryColor,
+      accentColor: input.accentColor,
+      heroImageUrls: input.heroPhotos.map((p) => p.url),
+      heroPhotos: input.heroPhotos,
+      heroLayout: input.heroLayout,
+      heroImageScale: input.heroImageScale,
+    });
+  }
+
+  /** Update general settings (WhatsApp, currency, locale, tax, service). */
+  public async updateSettings(restaurantId: string, input: UpdateSettingsDTO): Promise<Restaurant> {
+    return this.restaurants.update(restaurantId, {
+      whatsappNumber: input.whatsappNumber,
+      currencyCode: input.currencyCode,
+      defaultLocale: input.defaultLocale,
+      taxPercent: input.taxPercent,
+      serviceChargePercent: input.serviceChargePercent,
     });
   }
 }

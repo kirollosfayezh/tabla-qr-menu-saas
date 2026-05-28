@@ -12,7 +12,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await enforceRateLimit('webhook', `paymob:${ip}`);
     const payload = await req.json();
     const hmac = req.nextUrl.searchParams.get('hmac');
-    if (!verifyPaymobHmac(payload, hmac)) throw new ForbiddenError('Invalid Paymob signature');
+    if (!verifyPaymobHmac(payload, hmac)) {
+      // Audit the attempt before refusing.
+      await new PaymentService().recordRejectedWebhook(payload);
+      throw new ForbiddenError('Invalid Paymob signature');
+    }
     await new PaymentService().handlePaymobWebhook(payload);
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -1,4 +1,51 @@
 {
+  "legal": {
+    "nav": {
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "refunds": "Refunds",
+      "cookies": "Cookies"
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "lastUpdated": "Last updated: {date}",
+      "s1": { "title": "1. Acceptance of terms", "body": "By creating a Tabla account, you agree to these Terms of Service and our Privacy, Refund, and Cookies policies. If you do not agree, do not use Tabla." },
+      "s2": { "title": "2. Your account", "body": "You are responsible for keeping your password safe and for all activity under your account. You must provide accurate billing information and a working contact email." },
+      "s3": { "title": "3. Acceptable use", "body": "You may not use Tabla to publish illegal content, infringe intellectual property, run phishing or fraud, or interfere with other tenants. We may suspend any restaurant violating these rules." },
+      "s4": { "title": "4. Payments and subscriptions", "body": "Theme purchases are processed by Paymob. Prices are in the currency shown at checkout. You authorise us to charge the chosen payment method for the amount displayed at the time of purchase." },
+      "s5": { "title": "5. Service availability", "body": "We aim for high availability but do not guarantee uninterrupted service. Scheduled maintenance and incidents may occur." },
+      "s6": { "title": "6. Limitation of liability", "body": "Tabla is provided as-is. Our total liability for any claim is capped at the amounts you paid in the 12 months preceding the claim." },
+      "contact": { "title": "Contact", "body": "Questions? Reach us at support@tabla.app." }
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "lastUpdated": "Last updated: {date}",
+      "s1": { "title": "1. Data we collect", "body": "We collect: account data (email, name), restaurant data you enter, payment metadata (no card numbers — those live with Paymob), order metadata (no diner card data, no GPS), and diagnostic logs." },
+      "s2": { "title": "2. How we use it", "body": "To operate the service, send transactional emails (receipts, password resets), prevent abuse, and improve features. We never sell your data." },
+      "s3": { "title": "3. Sharing with vendors", "body": "We use: Supabase (database), Cloudflare R2 (image storage), Upstash (rate limiting), Paymob (payments), Resend (transactional email), Cloudflare Turnstile (bot protection), Sentry (error monitoring). Each vendor has its own privacy policy." },
+      "s4": { "title": "4. Your rights", "body": "You can access, export, correct, or delete your data from your account page. We respond to verified requests within 30 days." },
+      "s5": { "title": "5. Retention", "body": "Account and order data is retained while your account is active. After deletion, we hard-delete within 14 days except where required for legal records (e.g., financial transactions, kept for 7 years)." },
+      "s6": { "title": "6. International transfers", "body": "Data may be processed outside your country by the vendors above. We rely on standard contractual clauses where applicable." },
+      "contact": { "title": "Contact", "body": "Data requests: privacy@tabla.app." }
+    },
+    "refunds": {
+      "title": "Refund Policy",
+      "lastUpdated": "Last updated: {date}",
+      "s1": { "title": "1. Theme purchases", "body": "Theme purchases are refundable within 14 days of purchase if the theme has not been used to publish a public menu, or in the event of a verified product defect." },
+      "s2": { "title": "2. How to request a refund", "body": "Email support@tabla.app with your account email and order id. We will respond within 3 business days and process approved refunds within 7 business days." },
+      "s3": { "title": "3. Refund method", "body": "Refunds are issued to the original payment method via Paymob. Bank processing may add 5–10 business days before the refund appears on your statement." },
+      "s4": { "title": "4. Chargebacks", "body": "Please contact us first. Issuing an unjustified chargeback may result in account suspension and recovery of associated fees." },
+      "contact": { "title": "Contact", "body": "support@tabla.app" }
+    },
+    "cookies": {
+      "title": "Cookies Policy",
+      "lastUpdated": "Last updated: {date}",
+      "s1": { "title": "1. What we use", "body": "Strictly necessary cookies: session (Auth.js), CSRF protection, locale preference. These cannot be disabled and we do not store them for analytics." },
+      "s2": { "title": "2. Third-party cookies", "body": "Cloudflare Turnstile uses a cookie to verify you are not a bot. Google sets cookies during OAuth sign-in if you choose that method." },
+      "s3": { "title": "3. Your choices", "body": "You can clear cookies in your browser at any time. Clearing the session cookie will sign you out." },
+      "contact": { "title": "Contact", "body": "privacy@tabla.app" }
+    }
+  },
   "common": {
     "appName": "Tabla",
     "tagline": "Your menu, one scan away.",
@@ -15,7 +62,126 @@
   },
   "marketing": {
     "ctaStart": "Get started",
-    "ctaDemo": "Watch demo"
+    "ctaDemo": "Watch demo",
+    "nav": {
+      "features": "Features",
+      "themes": "Themes",
+      "pricing": "Pricing",
+      "about": "About",
+      "login": "Log in",
+      "start": "Start free trial"
+    },
+    "hero": {
+      "badge": "Now live in Cairo, Amman & Riyadh",
+      "h1a": "Your menu,",
+      "h1b": "one scan away.",
+      "sub": "Branded digital menus that take orders via WhatsApp. Set up in minutes. Serve in seconds.",
+      "cta1": "Start free trial",
+      "cta2": "Watch demo · 2 min",
+      "rating": "4.9",
+      "reviews": "from 1,200+ reviews",
+      "trustedBy": "Trusted by 2,400+ restaurants across MENA"
+    },
+    "features": {
+      "label": "Features",
+      "heading": "Everything you need to run a modern menu.",
+      "sub": "Six tools, one platform, zero hardware.",
+      "items": [
+        { "icon": "qr", "title": "QR-first menus", "desc": "A unique code per restaurant. Print on stickers, place on tables, never reprint again." },
+        { "icon": "palette", "title": "3 ready-made themes", "desc": "Classic bistro, modern café, fine-dining elegant. Override colors and logo to make it yours." },
+        { "icon": "whatsapp", "title": "WhatsApp orders", "desc": "Diners send their order to your number in one tap — no app to install, no commission." },
+        { "icon": "card", "title": "Built-in payments", "desc": "Optional Paymob integration. Take card and wallet payments inside the menu." },
+        { "icon": "chart", "title": "Live analytics", "desc": "See top items, peak times, average order value — across one branch or many." },
+        { "icon": "globe", "title": "Arabic + English", "desc": "Fully bilingual with proper RTL mirroring. Switch languages without losing your place." }
+      ]
+    },
+    "how": {
+      "label": "How it works",
+      "heading": "Live in 3 steps.",
+      "sub": "No engineering, no installs, no surprises.",
+      "steps": [
+        { "n": "01", "title": "Sign up & brand", "desc": "Add your logo, pick a theme, drop in your WhatsApp number." },
+        { "n": "02", "title": "Build your menu", "desc": "Add items with photos in EN + AR. Drag to reorder. Done in 20 minutes." },
+        { "n": "03", "title": "Stick the QR", "desc": "Print stickers, place on tables. Diners scan, browse, order. You get a WhatsApp." }
+      ]
+    },
+    "themes": {
+      "label": "Themes",
+      "heading": "Pick a theme that feels like you.",
+      "sub": "Three personalities, each fully customisable.",
+      "items": [
+        { "name": "Classic", "desc": "Warm bistro · cream + terracotta · serif display" },
+        { "name": "Modern", "desc": "Clean café · whitespace · bold display" },
+        { "name": "Elegant", "desc": "Fine dining · dark + gold · refined serif" }
+      ]
+    },
+    "pricing": {
+      "label": "Pricing",
+      "heading": "Pricing that scales with you.",
+      "sub": "Start free. Upgrade as you grow.",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlySave": "save 20%",
+      "mostPopular": "Most popular",
+      "free": "Free",
+      "mo": "mo",
+      "plans": [
+        {
+          "name": "Starter",
+          "desc": "For your first 100 covers a month",
+          "monthlyPrice": 0,
+          "yearlyPrice": 0,
+          "cta": "Start free",
+          "features": ["1 location", "Classic theme", "Up to 30 items", "WhatsApp orders", "Basic analytics"]
+        },
+        {
+          "name": "Studio",
+          "desc": "For thriving single venues",
+          "monthlyPrice": 290,
+          "yearlyPrice": 232,
+          "cta": "Start 14-day trial",
+          "best": true,
+          "features": ["1 location", "All 3 themes", "Unlimited items", "WhatsApp + Paymob", "Full analytics", "Custom domain"]
+        },
+        {
+          "name": "Group",
+          "desc": "For multi-location operators",
+          "monthlyPrice": 690,
+          "yearlyPrice": 552,
+          "cta": "Talk to us",
+          "features": ["Up to 10 locations", "All themes + custom", "Team accounts", "API access", "Priority support", "Onboarding call"]
+        }
+      ]
+    },
+    "faq": {
+      "heading": "Frequently asked.",
+      "items": [
+        { "q": "Do diners need to install an app?", "a": "No. The menu opens in their phone's browser straight from the QR. Order handoff happens in WhatsApp, which most users already have." },
+        { "q": "How do payments work?", "a": "Two modes. Default: the order is sent to your WhatsApp and you collect at the table. Optional: enable Paymob to take card / wallet inside the menu." },
+        { "q": "Can I use my own colors and fonts?", "a": "Yes. Each theme exposes primary, secondary and accent. Studio plans get custom fonts and full CSS overrides." },
+        { "q": "What does the QR code look like?", "a": "Brandable. You pick the colors, embed your logo in the centre, choose rounded or square modules, and export as PNG / SVG / PDF." }
+      ]
+    },
+    "cta": {
+      "heading": "Open your restaurant's next page.",
+      "button": "Start your free trial"
+    },
+    "footer": {
+      "description": "The QR menu platform built for MENA's restaurants. Simple, branded, bilingual.",
+      "copyright": "© 2026 Tabla · Made by KF Tech Solutions",
+      "product": {
+        "heading": "Product",
+        "links": ["Features", "Themes", "Pricing", "Roadmap"]
+      },
+      "company": {
+        "heading": "Company",
+        "links": ["About", "Careers", "Contact", "Press"]
+      },
+      "legal": {
+        "heading": "Legal",
+        "links": ["Privacy", "Terms", "Cookies", "Refunds"]
+      }
+    }
   },
   "auth": {
     "signIn": "Sign in",
@@ -35,6 +201,14 @@
     "continueWithGoogle": "Continue with Google",
     "resetPassword": "Reset your password",
     "resetComingSoon": "Password reset by email is coming soon. Contact support meanwhile.",
+    "resetHint": "Enter your email and we'll send you a single-use link valid for 30 minutes.",
+    "sendResetLink": "Send reset link",
+    "resetSentGeneric": "If that email is registered, a reset link is on its way. Check your inbox in a few minutes.",
+    "setNewPassword": "Set a new password",
+    "setNewPasswordHint": "Pick a strong new password. The reset link works once.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "resetDoneRedirecting": "Password updated. Redirecting you to sign in…",
     "backToLogin": "Back to sign in",
     "turnstileDisabled": "Bot check is disabled in development. Production will enforce it.",
     "confirmPassword": "Confirm password",
@@ -125,8 +299,93 @@
       "branding": "Branding",
       "orders": "Orders",
       "qr": "QR Code",
+      "analytics": "Analytics",
       "settings": "Settings",
+      "billing": "Billing",
+      "recommendations": "Recommendations",
       "account": "Account"
+    },
+    "upgrade": {
+      "title": "Choose your plan",
+      "description": "Compare plans and upgrade. If you're already on a paid plan, you only pay the difference.",
+      "currentPlan": "Current plan",
+      "free": "Free",
+      "mo": "mo",
+      "upgrade": "Upgrade",
+      "downgrade": "Downgrade",
+      "diffHint": "You already pay {amount}/mo — upgrade for the difference only",
+      "items": "{n} items",
+      "categories": "{n} categories",
+      "themes": "{n} themes"
+    },
+    "recommendations": {
+      "title": "Recommendations",
+      "description": "Smart suggestions to improve your menu and grow your restaurant.",
+      "noIssues": "Everything looks great! Keep it up.",
+      "priority": "Priority",
+      "suggestion": "Suggestion",
+      "impact": "Impact",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "actionBtn": "Fix now",
+      "refreshBtn": "Refresh",
+      "chatTitle": "Ask a question",
+      "chatPlaceholder": "e.g. How can I increase my orders?",
+      "chatSend": "Send",
+      "chatHint": "Our team replies within a few hours.",
+      "emptyTitle": "Ask us anything",
+      "emptyHint": "Send a message and we'll reply with recommendations to improve your restaurant.",
+      "categories": {
+        "menu": "Menu",
+        "visibility": "Visibility",
+        "engagement": "Engagement",
+        "settings": "Settings"
+      }
+    },
+    "plan": {
+      "free_trial": "Free Trial",
+      "studio": "Studio",
+      "group": "Group",
+      "suspended": "Suspended",
+      "trialLimits": "5 items · 1 theme",
+      "upgradeHint": "Upgrade to unlock more items and themes.",
+      "upgradeBtn": "Upgrade",
+      "itemLimitReached": "Plan limit reached: {max} items max. Upgrade to add more.",
+      "categoryLimitReached": "Plan limit reached: {max} categories max. Upgrade to add more.",
+      "themeLimitReached": "Your plan does not include this theme. Upgrade to switch themes.",
+      "planLabel": "Your plan",
+      "itemsUsed": "{used} / {max} items used",
+      "categoriesLabel": "categories max"
+    },
+    "billing": {
+      "title": "Billing",
+      "description": "Your plan, payment method, and payment history.",
+      "planLabel": "Your plan",
+      "planFree": "Starter",
+      "planActive": "Active",
+      "planPending": "Pending payment",
+      "planSuspended": "Suspended",
+      "renewsOn": "Renews on {date}",
+      "freeForever": "Free forever",
+      "perYear": "/ year",
+      "upgradeTo": "Upgrade to Group",
+      "manage": "Manage",
+      "paymentMethod": "Payment method",
+      "paymentManagedBy": "Card details are stored securely with Paymob. To update your card, complete a new payment.",
+      "securedBy": "Secured by Paymob",
+      "historyTitle": "Payment history",
+      "downloadAll": "Download all",
+      "colDate": "Date",
+      "colDescription": "Description",
+      "colStatus": "Status",
+      "colAmount": "Amount",
+      "statusPaid": "Paid",
+      "statusFailed": "Failed",
+      "statusRefunded": "Refunded",
+      "statusPending": "Pending",
+      "invoice": "Invoice",
+      "noPayments": "No payments yet. Your first payment will appear here."
     },
     "dashboard": {
       "title": "Dashboard",
@@ -134,7 +393,23 @@
       "viewsToday": "Views today",
       "ordersToday": "Orders today",
       "topItems": "Top item",
-      "revenue": "Revenue"
+      "revenue": "Revenue",
+      "avgOrder": "Avg order value",
+      "ordersTotal30d": "Orders (30d)",
+      "window24h": "Last 24 hours",
+      "window30d": "Last 30 days",
+      "liveTitle": "Your menu is live",
+      "notLiveTitle": "Your menu isn't live yet",
+      "liveBadge": "Live",
+      "pendingBadge": "Pending",
+      "liveAt": "Diners reach it here:",
+      "publishHint": "Complete payment or activation to publish your menu.",
+      "downloadQr": "Download QR",
+      "previewMenu": "Preview menu",
+      "ordersChartTitle": "Orders this week",
+      "ordersChartHint": "Last 7 days",
+      "topItemsTitle": "Top viewed items",
+      "topItemsHint": "Last 30 days"
     },
     "menu": {
       "title": "Menu",
@@ -196,6 +471,23 @@
         "priceInvalid": "Enter a valid price",
         "priceTooLarge": "Price is too large",
         "categoryRequired": "Pick a category"
+      },
+      "options": {
+        "title": "Item options",
+        "hint": "Add sizes, sauces, pasta types, doneness, extras, and other selectable choices.",
+        "empty": "No options yet. Add a group for choices like Size or Extras.",
+        "addGroup": "Add option group",
+        "removeGroup": "Remove group",
+        "groupName": "Group title",
+        "groupNameAr": "Group title (Arabic)",
+        "minSelect": "Minimum selected",
+        "maxSelect": "Maximum selected",
+        "required": "Required",
+        "optionLabel": "Option",
+        "optionLabelAr": "Option (Arabic)",
+        "priceDelta": "Price change",
+        "addOption": "Add option",
+        "remove": "Remove"
       }
     },
     "theme": {
@@ -206,10 +498,73 @@
       "activate": "Activate",
       "buy": "Buy with Paymob",
       "applePay": "Apple Pay",
-      "processing": "Processing…"
+      "processing": "Processing…",
+      "paymentsDisabled": "Unavailable (dev mode)",
+      "paymentsDisabledHint": "Paymob checkout is disabled in development. Switch to production with PAYMOB_* env vars set to enable purchases.",
+      "legalConsent": "By purchasing a theme you agree to our",
+      "legalTerms": "Terms of Service",
+      "legalRefunds": "Refund Policy"
     },
-    "branding": { "title": "Branding" },
-    "settings": { "title": "Settings" },
+    "branding": {
+      "title": "Branding",
+      "description": "Logo, colors, and name — updates live in the preview.",
+      "identityTitle": "Restaurant identity",
+      "identityHint": "These appear on your public menu and QR code.",
+      "logo": "Logo",
+      "replaceOrDrop": "Replace logo",
+      "uploading": "Uploading…",
+      "remove": "Remove",
+      "nameEn": "Name (EN)",
+      "nameAr": "Name (AR)",
+      "taglineEn": "Tagline (EN)",
+      "taglineAr": "Tagline (AR)",
+      "colors": "Brand colors",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "accent": "Accent",
+      "heroTitle": "Hero photos",
+      "heroHint": "Drag to reorder · Click a tile to edit · Updates live in the preview.",
+      "addHeroPhoto": "Add photo",
+      "heroScale": "Photo zoom",
+      "heroLayouts": {
+        "featured": "Featured",
+        "grid": "Grid",
+        "strip": "Strip",
+        "stack": "Stack"
+      },
+      "studioRotate": "Rotate 90°",
+      "studioFlipX": "Flip horizontal",
+      "studioFlipY": "Flip vertical",
+      "studioReset": "Reset",
+      "studioZoom": "Zoom",
+      "studioClose": "Close",
+      "studioDragHint": "Drag to reorder",
+      "openClientView": "Open client view",
+      "save": "Save changes",
+      "savedAt": "Saved at {time}",
+      "preview": "Live preview"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Contact, currency, language, and tax settings.",
+      "whatsapp": "WhatsApp number for orders",
+      "whatsappHint": "International format (e.g. +201234567890).",
+      "currency": "Currency",
+      "currencyHint": "ISO 4217 three-letter code.",
+      "defaultLocale": "Default language",
+      "tax": "Tax (VAT) %",
+      "service": "Service charge %",
+      "save": "Save",
+      "savedAt": "Saved at {time}"
+    },
+    "account": {
+      "title": "Account",
+      "description": "Your sign-in details.",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "signOut": "Sign out"
+    },
     "orders": {
       "title": "Orders",
       "description": "Recent orders sent from your menu via WhatsApp.",
@@ -225,6 +580,26 @@
       "statusSent": "Sent",
       "notes": "Notes"
     },
+    "analytics": {
+      "title": "Analytics",
+      "description": "Last {days} days of diner activity on your menu.",
+      "pageViews": "Menu views",
+      "itemViews": "Item views",
+      "orderInits": "Carts opened",
+      "waRedirects": "WhatsApp sends",
+      "conversion": "{pct}% conversion",
+      "confirmedOrders": "Orders sent",
+      "sentSinceWindow": "Orders created in the window.",
+      "dailyPeak": "Peak views in a day",
+      "peakHint": "Highest single-day view count in the window.",
+      "topItems": "Top viewed items",
+      "daily": "Daily menu views",
+      "empty": "No data in this window yet.",
+      "cols": {
+        "item": "Item",
+        "views": "Views"
+      }
+    },
     "qr": {
       "title": "QR Code",
       "subtitle": "Customize and download the QR code for your public menu.",
@@ -239,10 +614,205 @@
       "png": "Download PNG",
       "svg": "Download SVG",
       "pdf": "Download PDF"
-    },
-    "account": { "title": "Account" }
+    }
   },
-  "admin": { "title": "Admin" },
+  "admin": {
+    "title": "Admin",
+    "nav": {
+      "home": "Overview",
+      "restaurants": "Restaurants",
+      "themes": "Themes",
+      "packages": "Packages",
+      "payments": "Payments",
+      "users": "Users",
+      "audit": "Audit log",
+      "analytics": "Analytics",
+      "support": "Support"
+    },
+    "support": {
+      "title": "Support inbox",
+      "description": "Restaurant owners send you messages here. Click a conversation to reply.",
+      "threadDesc": "Reply to this restaurant's questions and recommendations.",
+      "reply": "Reply",
+      "noMessages": "No messages yet."
+    },
+    "home": {
+      "title": "Platform overview",
+      "description": "Global health of the Tabla platform.",
+      "restaurants": "Restaurants",
+      "activeHint": "{active} active · {suspended} suspended",
+      "pendingPayment": "Pending payment",
+      "users": "Users",
+      "ordersToday": "Orders today",
+      "revenueAllTime": "Revenue (all-time)",
+      "successOnly": "From successful payments only.",
+      "signedInAs": "Signed in as"
+    },
+    "restaurants": {
+      "title": "Restaurants",
+      "description": "{total} total. Suspend, activate, or filter by status.",
+      "searchPlaceholder": "Search name, slug, or owner email",
+      "search": "Search",
+      "empty": "No restaurants match the filters.",
+      "status": {
+        "all": "All statuses",
+        "active": "Active",
+        "pending": "Pending payment",
+        "suspended": "Suspended"
+      },
+      "cols": {
+        "restaurant": "Restaurant",
+        "owner": "Owner",
+        "orders": "Orders",
+        "status": "Status",
+        "created": "Created",
+        "actions": "Actions"
+      },
+      "actions": {
+        "suspend": "Suspend",
+        "activate": "Activate"
+      }
+    },
+    "themes": {
+      "title": "Themes",
+      "description": "Manage the theme catalog. Owners pick from active themes only.",
+      "newTheme": "New theme",
+      "editTheme": "Edit theme",
+      "active": "Active",
+      "inactive": "Inactive",
+      "free": "Free",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "key": "Key",
+      "sortOrder": "Sort order",
+      "nameEn": "Name (EN)",
+      "nameAr": "Name (AR)",
+      "descEn": "Description (EN)",
+      "descAr": "Description (AR)",
+      "previewUrl": "Preview image URL",
+      "priceCents": "Price (cents)",
+      "isFree": "Free",
+      "isActive": "Active"
+    },
+    "plans": {
+      "title": "Plans",
+      "description": "Control item limits, category limits, and accessible themes per plan. Changes take effect immediately.",
+      "maxItems": "Max items",
+      "maxCategories": "Max categories",
+      "monthlyPrice": "Monthly price",
+      "yearlyPrice": "Yearly price",
+      "accessibleThemes": "Accessible themes",
+      "restaurants": "restaurants",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "newPlan": "+ New Plan",
+      "createPlan": "Create plan",
+      "creating": "Creating…",
+      "planKey": "Plan key",
+      "planKeyHint": "Lowercase letters, numbers and underscores. Used as the internal ID (e.g. pro_plus).",
+      "planKeyError": "Lowercase letters, numbers, underscores only",
+      "nameEn": "Name (EN)",
+      "nameAr": "Name (AR)",
+      "cancelCreate": "Cancel"
+    },
+    "packages": {
+      "title": "Theme packages",
+      "description": "Bundle themes for sale via Paymob.",
+      "newPackage": "New package",
+      "editPackage": "Edit package",
+      "themesCount": "themes",
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "nameEn": "Name (EN)",
+      "nameAr": "Name (AR)",
+      "descEn": "Description (EN)",
+      "descAr": "Description (AR)",
+      "priceCents": "Price (cents)",
+      "currency": "Currency",
+      "themes": "Themes in this package",
+      "isActive": "Active"
+    },
+    "payments": {
+      "title": "Payments",
+      "description": "Payment audit trail. Refund flagging is manual.",
+      "empty": "No payments match.",
+      "filter": {
+        "all": "All",
+        "pending": "Pending",
+        "success": "Success",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "cols": {
+        "id": "ID",
+        "restaurant": "Restaurant",
+        "user": "User",
+        "package": "Package",
+        "amount": "Amount",
+        "status": "Status",
+        "paidAt": "Paid at",
+        "actions": "Actions"
+      },
+      "actions": { "refund": "Mark refunded" }
+    },
+    "users": {
+      "title": "Users",
+      "description": "Promote owners to admins or demote.",
+      "searchPlaceholder": "Search name or email",
+      "search": "Search",
+      "empty": "No users match.",
+      "roleAny": "Any role",
+      "roleOwner": "Owner",
+      "roleAdmin": "Admin",
+      "self": "(you)",
+      "cols": {
+        "user": "User",
+        "role": "Role",
+        "restaurants": "Restaurants",
+        "created": "Created",
+        "actions": "Actions"
+      },
+      "actions": {
+        "promote": "Promote to admin",
+        "demote": "Demote to owner"
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "description": "Every admin mutation is recorded here.",
+      "empty": "No actions logged yet.",
+      "tableMissing": "audit_logs table not found. Run `pnpm db:push` to create it.",
+      "cols": {
+        "time": "Time",
+        "actor": "Actor",
+        "action": "Action",
+        "target": "Target",
+        "metadata": "Metadata"
+      }
+    },
+    "analytics": {
+      "title": "Analytics",
+      "description": "Platform-wide activity at a glance.",
+      "activeRestaurants": "Active restaurants",
+      "ordersDay": "Orders (24h)",
+      "ordersWeek": "Orders (7d)",
+      "ordersMonth": "Orders (30d)",
+      "eventsWeek": "Events (last 7 days)",
+      "topRestaurants": "Top restaurants by orders",
+      "empty": "No data yet.",
+      "cols": {
+        "restaurant": "Restaurant",
+        "orders": "Orders"
+      }
+    }
+  },
   "payments": {
     "return": {
       "title": "Payment received",
@@ -276,6 +846,11 @@
       "qty": "Qty",
       "notes": "Notes",
       "tableNumber": "Table number",
+      "dineIn": "Dine-in",
+      "delivery": "Delivery",
+      "customerName": "Name (optional)",
+      "customerPhone": "Phone for delivery",
+      "deliveryAddress": "Delivery address",
       "subtotal": "Subtotal",
       "tax": "Tax",
       "service": "Service",
@@ -292,6 +867,11 @@
       "errorGeneric": "We couldn't send the order. Please try again.",
       "errorUnavailable": "This menu is temporarily unavailable.",
       "errorEmpty": "Add at least one available item."
+    },
+    "options": {
+      "chooseOne": "Choose one",
+      "chooseUpTo": "Choose up to {max}",
+      "chooseRange": "Choose {min}-{max}"
     },
     "orderSummary": {
       "eyebrow": "Order summary",

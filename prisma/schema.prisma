@@ -99,6 +99,18 @@ model Session {
   @@map("sessions")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -106,6 +118,35 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model Plan {
+  key                String   @id
+  name               String
+  nameAr             String?  @map("name_ar")
+  maxItems           Int      @default(5)     @map("max_items")
+  maxCategories      Int      @default(2)     @map("max_categories")
+  monthlyPriceCents  Int      @default(0)     @map("monthly_price_cents")
+  yearlyPriceCents   Int      @default(0)     @map("yearly_price_cents")
+  sortOrder          Int      @default(0)     @map("sort_order")
+  isActive           Boolean  @default(true)  @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt      @map("updated_at")
+
+  accessibleThemes PlanTheme[]
+
+  @@map("plans")
+}
+
+model PlanTheme {
+  planKey String @map("plan_key")
+  themeId String @map("theme_id") @db.Uuid
+
+  plan  Plan  @relation(fields: [planKey], references: [key], onDelete: Cascade)
+  theme Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([planKey, themeId])
+  @@map("plan_themes")
 }
 
 model Restaurant {
@@ -123,7 +164,12 @@ model Restaurant {
   primaryColor          String           @default("#FF6B35") @map("primary_color")
   secondaryColor        String           @default("#1A1A2E") @map("secondary_color")
   accentColor           String           @default("#FFE8DE") @map("accent_color")
+  heroImageUrls         String[]         @default([]) @map("hero_image_urls")
+  heroPhotos            Json             @default("[]") @map("hero_photos")
+  heroLayout            String           @default("featured") @map("hero_layout")
+  heroImageScale        Int              @default(100) @map("hero_image_scale")
   themeId               String?          @map("theme_id") @db.Uuid
+  planKey               String           @default("free_trial") @map("plan_key")
   status                RestaurantStatus @default(PENDING_PAYMENT)
   currencyCode          String           @default("EGP") @map("currency_code")
   taxPercent            Decimal          @default(0) @map("tax_percent") @db.Decimal(5, 2)
@@ -136,9 +182,10 @@ model Restaurant {
   theme      Theme?           @relation(fields: [themeId], references: [id])
   categories MenuCategory[]
   items      MenuItem[]
-  orders     Order[]
-  payments   Payment[]
-  events     AnalyticsEvent[]
+  orders          Order[]
+  payments        Payment[]
+  events          AnalyticsEvent[]
+  supportMessages SupportMessage[]
 
   @@index([ownerId])
   @@index([status])
@@ -162,6 +209,8 @@ model Theme {
 
   restaurants Restaurant[]
   packages    ThemePackageTheme[]
+  payments    Payment[]
+  plans       PlanTheme[]
 
   @@map("themes")
 }
@@ -230,12 +279,47 @@ model MenuItem {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  restaurant Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category     MenuCategory          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant            @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  optionGroups MenuItemOptionGroup[]
 
   @@index([restaurantId])
   @@index([categoryId])
   @@map("menu_items")
+}
+
+model MenuItemOptionGroup {
+  id           String  @id @default(uuid()) @db.Uuid
+  itemId       String  @map("item_id") @db.Uuid
+  name         String
+  nameAr       String? @map("name_ar")
+  minSelect    Int     @default(0) @map("min_select")
+  maxSelect    Int     @default(1) @map("max_select")
+  required     Boolean @default(false)
+  sortOrder    Int     @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  item         MenuItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  options      MenuItemOption[]
+
+  @@index([itemId])
+  @@map("menu_item_option_groups")
+}
+
+model MenuItemOption {
+  id              String  @id @default(uuid()) @db.Uuid
+  groupId         String  @map("group_id") @db.Uuid
+  label           String
+  labelAr         String? @map("label_ar")
+  priceDeltaCents Int     @default(0) @map("price_delta_cents")
+  sortOrder       Int     @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  group MenuItemOptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@map("menu_item_options")
 }
 
 model Order {
@@ -265,6 +349,7 @@ model Payment {
   providerOrderId       String?         @map("provider_order_id")
   providerTransactionId String?         @unique @map("provider_transaction_id")
   themePackageId        String?         @map("theme_package_id") @db.Uuid
+  themeId               String?         @map("theme_id") @db.Uuid
   amountCents           Int             @map("amount_cents")
   currencyCode          String          @map("currency_code")
   status                PaymentStatus   @default(PENDING)
@@ -276,10 +361,58 @@ model Payment {
   restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   themePackage ThemePackage? @relation(fields: [themePackageId], references: [id])
+  theme        Theme?        @relation(fields: [themeId], references: [id])
+  webhookEvents PaymentWebhookEvent[]
 
   @@index([restaurantId])
   @@index([status])
   @@map("payments")
+}
+
+model PaymentWebhookEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  paymentId     String?  @map("payment_id") @db.Uuid
+  providerOrderId String? @map("provider_order_id")
+  hmacValid     Boolean  @map("hmac_valid")
+  payload       Json
+  receivedAt    DateTime @default(now()) @map("received_at")
+
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([paymentId, receivedAt])
+  @@index([providerOrderId])
+  @@map("payment_webhook_events")
+}
+
+model SupportMessage {
+  id           String   @id @default(uuid()) @db.Uuid
+  restaurantId String   @map("restaurant_id") @db.Uuid
+  senderRole   String   @map("sender_role")   // "OWNER" | "ADMIN"
+  content      String
+  readByAdmin  Boolean  @default(false) @map("read_by_admin")
+  readByOwner  Boolean  @default(false) @map("read_by_owner")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, createdAt])
+  @@map("support_messages")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorId     String   @map("actor_id") @db.Uuid
+  actorEmail  String   @map("actor_email")
+  action      String
+  targetType  String   @map("target_type")
+  targetId    String?  @map("target_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 model AnalyticsEvent {

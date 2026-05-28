@@ -4,6 +4,12 @@ import type { MessageBuildInput } from './types';
 const EN = {
   order: 'Order',
   table: 'Table',
+  fulfillment: 'Type',
+  dineIn: 'Dine-in',
+  delivery: 'Delivery',
+  customer: 'Customer',
+  phone: 'Phone',
+  address: 'Address',
   notes: 'Notes',
   subtotal: 'Subtotal',
   tax: 'Tax',
@@ -15,6 +21,12 @@ const EN = {
 const AR = {
   order: 'طلب',
   table: 'طاولة',
+  fulfillment: 'النوع',
+  dineIn: 'داخل المطعم',
+  delivery: 'توصيل',
+  customer: 'العميل',
+  phone: 'الهاتف',
+  address: 'العنوان',
   notes: 'ملاحظات',
   subtotal: 'المجموع الفرعي',
   tax: 'الضريبة',
@@ -27,11 +39,18 @@ export function buildOrderMessage(input: MessageBuildInput): string {
   const labels = input.locale === 'ar' ? AR : EN;
   const restaurant = localize(input.restaurant.name, input.restaurant.nameAr, input.locale);
   const rows = input.order.lines.map((line) => lineText(line, input.order.currencyCode, input.locale));
-  const table = input.order.tableNumber ? [`${labels.table}: ${input.order.tableNumber}`] : [];
+  const fulfillment = input.order.fulfillmentType === 'DELIVERY' ? labels.delivery : labels.dineIn;
+  const details = [
+    `${labels.fulfillment}: ${fulfillment}`,
+    input.order.tableNumber ? `${labels.table}: ${input.order.tableNumber}` : null,
+    input.order.customerName ? `${labels.customer}: ${input.order.customerName}` : null,
+    input.order.customerPhone ? `${labels.phone}: ${input.order.customerPhone}` : null,
+    input.order.deliveryAddress ? `${labels.address}: ${input.order.deliveryAddress}` : null,
+  ].filter((line): line is string => Boolean(line));
   return [
     `${labels.order} #${input.order.id.slice(0, 8)}`,
     restaurant,
-    ...table,
+    ...details,
     '',
     ...rows,
     '',
@@ -62,8 +81,18 @@ function lineText(
   const labels = locale === 'ar' ? AR : EN;
   const name = localize(line.name, line.nameAr, locale);
   const total = money(line.lineTotalCents, currencyCode, locale);
+  const selections = line.selections?.length
+    ? '\n' + line.selections.map((s) => {
+      const group = localize(s.groupName, s.groupNameAr, locale);
+      const label = localize(s.optionLabel, s.optionLabelAr, locale);
+      const delta = s.priceDeltaCents === 0
+        ? ''
+        : ` (${s.priceDeltaCents > 0 ? '+' : ''}${money(s.priceDeltaCents, currencyCode, locale)})`;
+      return `  - ${group}: ${label}${delta}`;
+    }).join('\n')
+    : '';
   const notes = line.notes ? `\n  ${labels.notes}: ${line.notes}` : '';
-  return `${line.qty} x ${name} - ${total}${notes}`;
+  return `${line.qty} x ${name} - ${total}${selections}${notes}`;
 }
 
 function localize(en: string, ar: string | null, locale: 'en' | 'ar'): string {

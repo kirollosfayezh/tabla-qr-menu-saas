@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { CART_MAX_QTY } from '@/config/constants';
 import { formatPriceForLocale, localizedField } from '@/themes/helpers';
+import { unitPriceCents } from './cart-store';
 import type { CartLine } from './types';
 
 interface Props {
@@ -16,6 +17,8 @@ interface Props {
 export function CartLineRow({ line, currencyCode, locale, onQty, onNotes }: Props): React.JSX.Element {
   const t = useTranslations('tenant.cart');
   const name = localizedField(line.name, line.nameAr, locale);
+  const selections = line.selections ?? [];
+  const linePrice = unitPriceCents(line) * line.qty;
   return (
     <div className="grid grid-cols-[56px_1fr] gap-3 border-b border-[var(--d-border)] py-4">
       {line.imageUrl ? (
@@ -26,8 +29,20 @@ export function CartLineRow({ line, currencyCode, locale, onQty, onNotes }: Prop
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-[var(--d-text)]">{name}</p>
-            <p className="text-xs text-[var(--d-text)] opacity-65">
-              {formatPriceForLocale(line.priceCents * line.qty, currencyCode, locale)}
+            {selections.length > 0 ? (
+              <ul className="mt-1 space-y-0.5">
+                {selections.map((s) => (
+                  <li key={s.optionId} className="text-[11px] text-[var(--d-text-soft)]">
+                    {localizedField(s.groupName, s.groupNameAr, locale)}: {localizedField(s.optionLabel, s.optionLabelAr, locale)}
+                    {s.priceDeltaCents !== 0
+                      ? ` (${s.priceDeltaCents > 0 ? '+' : ''}${formatPriceForLocale(s.priceDeltaCents, currencyCode, locale)})`
+                      : ''}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="mt-1 text-xs font-semibold text-[var(--d-primary)]">
+              {formatPriceForLocale(linePrice, currencyCode, locale)}
             </p>
           </div>
           <QtyStepper qty={line.qty} onQty={onQty} label={t('qtyAria', { name })} />
@@ -64,7 +79,7 @@ function QtyStepper({
         type="button"
         onClick={() => onQty(qty + 1)}
         disabled={qty >= CART_MAX_QTY}
-        className="h-9 w-9 bg-[var(--d-primary)] text-lg text-white disabled:opacity-40"
+        className="h-9 w-9 bg-[var(--d-primary)] text-lg text-[var(--d-on-primary)] disabled:opacity-40"
       >
         +
       </button>

@@ -79,20 +79,21 @@ export function ClassicItemCard({ item, restaurantId, currencyCode, locale, onOp
         </div>
       </div>
       </button>
-      <QuickAdd item={item} restaurantId={restaurantId} />
+      <QuickAdd item={item} restaurantId={restaurantId} onOpen={onOpen} />
     </article>
   );
 }
 
-function QuickAdd({ item, restaurantId }: { item: MenuItemSnapshot; restaurantId: string }): React.JSX.Element {
+function QuickAdd({ item, restaurantId, onOpen }: { item: MenuItemSnapshot; restaurantId: string; onOpen: () => void }): React.JSX.Element {
   const add = useCartStore(restaurantId, (state) => state.add);
+  const hasOptions = (item.optionGroups ?? []).length > 0;
   return (
     <button
       type="button"
       aria-label="Add"
       disabled={!item.isAvailable}
-      onClick={() => add(item, 1, '')}
-      className="mt-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--d-primary)] text-lg font-semibold leading-none text-white shadow-md disabled:bg-black/20"
+      onClick={() => (hasOptions ? onOpen() : add(item, 1, '', []))}
+      className="mt-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--d-primary)] text-lg font-semibold leading-none text-[var(--d-on-primary)] shadow-md disabled:bg-black/20"
     >
       +
     </button>
