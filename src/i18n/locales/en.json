@@ -108,12 +108,8 @@
     "themes": {
       "label": "Themes",
       "heading": "Pick a theme that feels like you.",
-      "sub": "Three personalities, each fully customisable.",
-      "items": [
-        { "name": "Classic", "desc": "Warm bistro · cream + terracotta · serif display" },
-        { "name": "Modern", "desc": "Clean café · whitespace · bold display" },
-        { "name": "Elegant", "desc": "Fine dining · dark + gold · refined serif" }
-      ]
+      "sub": "Preview any theme live on phone, tablet and laptop before you choose.",
+      "choose": "Get started"
     },
     "pricing": {
       "label": "Pricing",
@@ -139,7 +135,7 @@
           "desc": "For thriving single venues",
           "monthlyPrice": 290,
           "yearlyPrice": 232,
-          "cta": "Start 14-day trial",
+          "cta": "Start 5-day trial",
           "best": true,
           "features": ["1 location", "All 3 themes", "Unlimited items", "WhatsApp + Paymob", "Full analytics", "Custom domain"]
         },
@@ -275,7 +271,12 @@
       "subtitle": "You can change this anytime.",
       "free": "Free",
       "paid": "Premium",
-      "selected": "Selected"
+      "selected": "Selected",
+      "preview": "Preview",
+      "select": "Select",
+      "selectThis": "Select this theme",
+      "premiumLocked": "Upgrade after setup",
+      "premiumNote": "Premium themes unlock once you upgrade your plan. Pick a free theme to go live now — you can switch anytime."
     },
     "done": {
       "title": "You're live 🎉",
@@ -313,10 +314,16 @@
       "mo": "mo",
       "upgrade": "Upgrade",
       "downgrade": "Downgrade",
+      "opening": "Opening…",
       "diffHint": "You already pay {amount}/mo — upgrade for the difference only",
       "items": "{n} items",
       "categories": "{n} categories",
       "themes": "{n} themes"
+    },
+    "trialEnded": {
+      "title": "Your 5-day free trial has ended",
+      "description": "Your menu is paused and hidden from diners. Upgrade to a paid plan to bring it back online — your menu, items and settings are all saved.",
+      "signOut": "Sign out"
     },
     "recommendations": {
       "title": "Recommendations",
@@ -414,6 +421,10 @@
     "menu": {
       "title": "Menu",
       "subtitle": "Organize categories and items.",
+      "downloadTemplate": "Download example sheet",
+      "uploadTemplate": "Upload filled sheet",
+      "importing": "Importing…",
+      "importSuccess": "Imported {items} item(s).",
       "newCategory": "New category",
       "addCategory": "Add category",
       "categoryName": "Category name",
@@ -539,6 +550,9 @@
       "studioZoom": "Zoom",
       "studioClose": "Close",
       "studioDragHint": "Drag to reorder",
+      "offersTitle": "Offers ticker",
+      "offersHint": "Scrolling messages shown on your menu page.",
+      "addOffer": "Add offer",
       "openClientView": "Open client view",
       "save": "Save changes",
       "savedAt": "Saved at {time}",
@@ -578,7 +592,16 @@
       "total": "Total",
       "status": "Status",
       "statusSent": "Sent",
-      "notes": "Notes"
+      "notes": "Notes",
+      "type": "Type",
+      "dineIn": "Dine-in",
+      "delivery": "Delivery",
+      "customer": "Customer",
+      "details": "Customer / table",
+      "viewMap": "Open map",
+      "filterAll": "All",
+      "dineInOrders": "Dine-in",
+      "deliveryOrders": "Delivery"
     },
     "analytics": {
       "title": "Analytics",
@@ -627,7 +650,27 @@
       "users": "Users",
       "audit": "Audit log",
       "analytics": "Analytics",
+      "email": "Email blast",
       "support": "Support"
+    },
+    "email": {
+      "title": "Email blast",
+      "description": "Send a one-off announcement to your users. Goes out from your verified Resend sender.",
+      "audienceLabel": "Audience",
+      "audAll": "All users",
+      "audOwners": "Owners",
+      "audAdmins": "Admins",
+      "subjectLabel": "Subject",
+      "subjectPh": "What's this email about?",
+      "bodyLabel": "Message",
+      "bodyPh": "Write your announcement…",
+      "recipients": "{n} recipients",
+      "sendBtn": "Send email",
+      "confirmBody": "Send this email to {n} users? This can't be undone.",
+      "confirmSend": "Yes, send it",
+      "cancel": "Cancel",
+      "sending": "Sending…",
+      "resultSent": "Sent to {sent} of {total} users ({failed} failed)."
     },
     "support": {
       "title": "Support inbox",
@@ -665,12 +708,16 @@
         "owner": "Owner",
         "orders": "Orders",
         "status": "Status",
+        "plan": "Plan",
         "created": "Created",
         "actions": "Actions"
       },
       "actions": {
         "suspend": "Suspend",
-        "activate": "Activate"
+        "activate": "Activate",
+        "assignPlan": "Assign plan",
+        "delete": "Delete",
+        "deleteConfirm": "Delete {name} permanently? This will remove its menu, orders, payments, analytics, and support messages. This cannot be undone."
       }
     },
     "themes": {
@@ -743,6 +790,17 @@
       "title": "Payments",
       "description": "Payment audit trail. Refund flagging is manual.",
       "empty": "No payments match.",
+      "methodsTitle": "Payment methods",
+      "methodsHint": "Choose which checkout methods restaurants can use. Disabled methods are hidden everywhere.",
+      "methodCard": "Card (Paymob)",
+      "methodCardSub": "Default — Visa, Mastercard, Meeza via Paymob",
+      "methodApplePay": "Apple Pay",
+      "methodApplePaySub": "Touch ID / Face ID via Paymob",
+      "methodInstapay": "InstaPay",
+      "methodInstapaySub": "Manual transfer — admin confirms",
+      "methodOn": "Active",
+      "methodOff": "Off",
+      "methodsAllOffWarning": "All methods are off — restaurants can't pay until you enable at least one.",
       "filter": {
         "all": "All",
         "pending": "Pending",
@@ -851,6 +909,11 @@
       "customerName": "Name (optional)",
       "customerPhone": "Phone for delivery",
       "deliveryAddress": "Delivery address",
+      "useLocation": "Pin my location",
+      "locating": "Getting location…",
+      "locationSet": "Location pinned ✓",
+      "viewLocation": "View on map",
+      "locationError": "Couldn't get your location. Please type the address.",
       "subtotal": "Subtotal",
       "tax": "Tax",
       "service": "Service",

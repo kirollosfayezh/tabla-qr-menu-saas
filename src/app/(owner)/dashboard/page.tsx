@@ -50,7 +50,7 @@ export default async function DashboardHomePage(): Promise<React.JSX.Element> {
     count: row.count,
   }));
 
-  const menuUrl = `${env.APP_PUBLIC_URL.replace(/\/$/, '')}/${restaurant.slug}`;
+  const menuUrl = `${env.APP_PUBLIC_URL.replace(/\/$/, '')}/t/${restaurant.slug}`;
   const isLive = restaurant.status === 'ACTIVE' && restaurant.publishedAt !== null;
 
   return (

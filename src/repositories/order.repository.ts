@@ -3,7 +3,13 @@ import { BaseRepository } from './base.repository';
 
 export interface OrderCreateInput {
   restaurantId: string;
+  fulfillmentType: 'DINE_IN' | 'DELIVERY';
   tableNumber: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  deliveryAddress: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   items: Prisma.InputJsonValue;
   totalCents: number;
   currencyCode: string;
@@ -33,11 +39,33 @@ export class OrderRepository extends BaseRepository {
     });
   }
 
-  public listSince(restaurantId: string, since: Date): Promise<Order[]> {
+  public listSince(
+    restaurantId: string,
+    since: Date,
+    fulfillmentType?: 'DINE_IN' | 'DELIVERY',
+  ): Promise<Order[]> {
     return this.db.order.findMany({
-      where: { restaurantId, createdAt: { gte: since } },
+      where: { restaurantId, createdAt: { gte: since }, ...(fulfillmentType ? { fulfillmentType } : {}) },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /** Order count + revenue grouped by fulfillment type, for the dine-in vs delivery breakdown. */
+  public async fulfillmentBreakdown(
+    restaurantId: string,
+    since: Date,
+  ): Promise<Array<{ fulfillmentType: 'DINE_IN' | 'DELIVERY'; count: number; revenueCents: number }>> {
+    const rows = await this.db.order.groupBy({
+      by: ['fulfillmentType'],
+      where: { restaurantId, createdAt: { gte: since } },
+      _count: { _all: true },
+      _sum: { totalCents: true },
+    });
+    return rows.map((row) => ({
+      fulfillmentType: row.fulfillmentType,
+      count: row._count._all,
+      revenueCents: row._sum.totalCents ?? 0,
+    }));
   }
 
   public async dailyStats(restaurantId: string, since: Date): Promise<Array<{ day: string; count: number; revenueCents: number }>> {

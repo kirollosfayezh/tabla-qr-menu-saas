@@ -30,6 +30,17 @@ enum OrderStatus {
   SENT
 }
 
+enum FulfillmentType {
+  DINE_IN
+  DELIVERY
+}
+
+enum PaymentMethodKey {
+  CARD
+  APPLE_PAY
+  INSTAPAY
+}
+
 enum PaymentProvider {
   PAYMOB
 }
@@ -169,7 +180,10 @@ model Restaurant {
   heroLayout            String           @default("featured") @map("hero_layout")
   heroImageScale        Int              @default(100) @map("hero_image_scale")
   themeId               String?          @map("theme_id") @db.Uuid
+  themeCustomization    Json             @default("{}") @map("theme_customization")
+  promoMessages         String[]         @default([]) @map("promo_messages")
   planKey               String           @default("free_trial") @map("plan_key")
+  trialEndsAt           DateTime?        @map("trial_ends_at")
   status                RestaurantStatus @default(PENDING_PAYMENT)
   currencyCode          String           @default("EGP") @map("currency_code")
   taxPercent            Decimal          @default(0) @map("tax_percent") @db.Decimal(5, 2)
@@ -200,6 +214,7 @@ model Theme {
   description      String?
   descriptionAr    String?  @map("description_ar")
   previewImageUrl  String?  @map("preview_image_url")
+  design           Json     @default("{}")
   isFree           Boolean  @default(false) @map("is_free")
   priceCents       Int      @default(0) @map("price_cents")
   isActive         Boolean  @default(true) @map("is_active")
@@ -323,21 +338,28 @@ model MenuItemOption {
 }
 
 model Order {
-  id                    String      @id @default(uuid()) @db.Uuid
-  restaurantId          String      @map("restaurant_id") @db.Uuid
-  tableNumber           String?     @map("table_number")
+  id                    String          @id @default(uuid()) @db.Uuid
+  restaurantId          String          @map("restaurant_id") @db.Uuid
+  fulfillmentType       FulfillmentType @default(DINE_IN) @map("fulfillment_type")
+  tableNumber           String?         @map("table_number")
+  customerName          String?         @map("customer_name")
+  customerPhone         String?         @map("customer_phone")
+  deliveryAddress       String?         @map("delivery_address")
+  deliveryLat           Float?          @map("delivery_lat")
+  deliveryLng           Float?          @map("delivery_lng")
   items                 Json
-  totalCents            Int         @map("total_cents")
-  currencyCode          String      @map("currency_code")
-  customerLocale        Locale      @map("customer_locale")
-  deviceInfo            String?     @map("device_info")
-  whatsappRedirectedAt  DateTime?   @map("whatsapp_redirected_at")
-  status                OrderStatus @default(SENT)
-  createdAt             DateTime    @default(now()) @map("created_at")
+  totalCents            Int             @map("total_cents")
+  currencyCode          String          @map("currency_code")
+  customerLocale        Locale          @map("customer_locale")
+  deviceInfo            String?         @map("device_info")
+  whatsappRedirectedAt  DateTime?       @map("whatsapp_redirected_at")
+  status                OrderStatus     @default(SENT)
+  createdAt             DateTime        @default(now()) @map("created_at")
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId, createdAt])
+  @@index([restaurantId, fulfillmentType, createdAt])
   @@map("orders")
 }
 
@@ -350,6 +372,7 @@ model Payment {
   providerTransactionId String?         @unique @map("provider_transaction_id")
   themePackageId        String?         @map("theme_package_id") @db.Uuid
   themeId               String?         @map("theme_id") @db.Uuid
+  planKey               String?         @map("plan_key")
   amountCents           Int             @map("amount_cents")
   currencyCode          String          @map("currency_code")
   status                PaymentStatus   @default(PENDING)
@@ -382,6 +405,16 @@ model PaymentWebhookEvent {
   @@index([paymentId, receivedAt])
   @@index([providerOrderId])
   @@map("payment_webhook_events")
+}
+
+/** Platform-wide toggle for each checkout payment method, controlled by admins. */
+model PaymentMethodSetting {
+  id        String           @id @default(uuid()) @db.Uuid
+  method    PaymentMethodKey @unique
+  isActive  Boolean          @default(true) @map("is_active")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  @@map("payment_method_settings")
 }
 
 model SupportMessage {

@@ -7,10 +7,13 @@ import { auth } from '@/lib/auth/auth';
 import { UserRepository } from '@/repositories/user.repository';
 import { RestaurantRepository } from '@/repositories/restaurant.repository';
 import { PlanRepository } from '@/repositories/plan.repository';
+import { AdminPlanRepository } from '@/repositories/admin/admin-plan.repository';
 import { prisma } from '@/repositories/prisma.client';
+import { isTrialExpired } from '@/config/plans';
 import { Sidebar } from '@/components/owner/sidebar';
 import { Topbar } from '@/components/owner/topbar';
 import { PlanBanner } from '@/components/owner/plan-banner';
+import { TrialEndedGate } from '@/components/owner/trial-ended-gate';
 
 interface TopbarDisplay {
   name: string;
@@ -42,13 +45,28 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const restaurant = await new RestaurantRepository().findByOwnerId(session.user.id);
   if (!restaurant) redirect('/onboarding');
 
+  if (isTrialExpired(restaurant.planKey, restaurant.trialEndsAt)) {
+    const [allPlans, currentPlan] = await Promise.all([
+      new AdminPlanRepository().listAll(),
+      new PlanRepository().findByKey(restaurant.planKey),
+    ]);
+    return (
+      <TrialEndedGate
+        plans={allPlans}
+        currentPlanKey={restaurant.planKey}
+        currentMonthlyPriceCents={currentPlan?.monthlyPriceCents ?? 0}
+        currencyCode={restaurant.currencyCode}
+      />
+    );
+  }
+
   const [plan, itemCount] = await Promise.all([
     new PlanRepository().findByKey(restaurant.planKey)
       .then((p) => p ?? new PlanRepository().findByKey('free_trial')),
     prisma.menuItem.count({ where: { restaurantId: restaurant.id } }),
   ]);
   const planKey = plan?.key ?? 'free_trial';
-  const planLimits = { maxItems: plan?.maxItems ?? 5, maxCategories: plan?.maxCategories ?? 2 };
+  const planLimits = { maxItems: plan?.maxItems ?? 5, maxCategories: plan?.maxCategories ?? 5 };
 
   const user = await new UserRepository().findById(session.user.id);
   const display = buildTopbarDisplay(user, session);

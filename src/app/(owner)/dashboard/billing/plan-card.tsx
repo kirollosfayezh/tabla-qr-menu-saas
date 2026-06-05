@@ -4,17 +4,17 @@ import { cn } from '@/lib/cn';
 
 interface Props {
   status: 'ACTIVE' | 'PENDING_PAYMENT' | 'SUSPENDED';
-  themeName: string | null;
-  themeIsFree: boolean;
+  planName: string;
+  yearlyPriceCents: number;
+  canUpgrade: boolean;
   currencyCode: string;
 }
 
 /** Current plan card — design ref: `qrcode menu/owner.jsx` Billing → plan card. */
-export async function PlanCard({ status, themeName, themeIsFree, currencyCode }: Props): Promise<React.JSX.Element> {
+export async function PlanCard({ status, planName, yearlyPriceCents, canUpgrade, currencyCode }: Props): Promise<React.JSX.Element> {
   const t = await getTranslations('owner.billing');
 
-  const planName = themeIsFree ? t('planFree') : (themeName ?? t('planFree'));
-  const price = themeIsFree ? 0 : 290;
+  const price = Math.round(yearlyPriceCents / 100);
 
   const statusLabel =
     status === 'ACTIVE' ? t('planActive') :
@@ -52,12 +52,14 @@ export async function PlanCard({ status, themeName, themeIsFree, currencyCode }:
             </div>
           )}
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/dashboard/billing/upgrade"
-              className="inline-flex h-9 items-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
-            >
-              {t('upgradeTo')}
-            </Link>
+            {canUpgrade && (
+              <Link
+                href="/dashboard/billing/upgrade"
+                className="inline-flex h-9 items-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+              >
+                {t('upgradeTo')}
+              </Link>
+            )}
             <Link
               href="/dashboard/billing/upgrade"
               className="inline-flex h-9 items-center rounded-full border border-border-default px-4 text-sm font-semibold text-text-primary transition hover:bg-surface-raised"

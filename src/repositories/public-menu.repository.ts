@@ -2,6 +2,8 @@ import { BaseRepository } from './base.repository';
 import type { MenuItem, Restaurant } from '@prisma/client';
 import type { CategoryWithItems, MenuItemOptionGroupSnapshot, RestaurantSnapshot } from '@/themes/theme.types';
 import { parseHeroPhotos } from '@/lib/hero-photos';
+import { ThemeOverrideSchema } from '@/dtos/theme-customization.dto';
+import { isTrialExpired } from '@/config/plans';
 
 interface FullMenu {
   restaurant: RestaurantSnapshot;
@@ -31,6 +33,8 @@ export class PublicMenuRepository extends BaseRepository {
       },
     });
     if (!row) return null;
+    // An expired free trial takes the diner menu offline until the owner upgrades.
+    if (isTrialExpired(row.planKey, row.trialEndsAt)) return null;
 
     const restaurant: RestaurantSnapshot = {
       id: row.id,
@@ -53,6 +57,8 @@ export class PublicMenuRepository extends BaseRepository {
       serviceChargePercent: Number(row.serviceChargePercent),
       status: row.status,
       themeKey: row.theme?.key ?? 'classic',
+      themeCustomization: ThemeOverrideSchema.safeParse(row.themeCustomization).data ?? {},
+      promoMessages: row.promoMessages ?? [],
     };
 
     const allItemIds: string[] = [];

@@ -70,13 +70,4 @@
   --border-strong: #56566C;
 }
 
-/* Diner theme palettes */
-[data-diner-theme="classic"] {
-  --d-display: 'Fraunces', 'Cormorant Garamond', serif;
-}
-[data-diner-theme="modern"] {
-  --d-display: 'Bricolage Grotesque', 'Inter', sans-serif;
-}
-[data-diner-theme="elegant"] {
-  --d-display: 'Cormorant Garamond', 'Fraunces', serif;
-}
+/* --d-display is set by ThemeColorProvider inline styles; no static overrides here. */

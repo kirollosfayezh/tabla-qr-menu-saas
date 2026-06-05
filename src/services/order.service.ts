@@ -37,7 +37,7 @@ export class OrderService {
     const totalCents = subtotalCents + taxCents + serviceCents;
     const order = await this.orders.create({
       restaurantId: restaurant.id,
-      tableNumber: input.fulfillmentType === 'DINE_IN' ? input.tableNumber || null : null,
+      ...fulfillmentColumns(input),
       items: toJsonSnapshot(lines, { subtotalCents, taxCents, serviceCents }),
       totalCents,
       currencyCode: restaurant.currencyCode,
@@ -104,20 +104,31 @@ function resolveAndValidateSelections(item: MenuItemSnapshot, optionIds: Readonl
   return selections;
 }
 
+/** Fulfillment-specific columns, normalized so dine-in/delivery only keep their own fields. */
+type FulfillmentInput = Pick<PlaceOrderDTO, 'fulfillmentType' | 'tableNumber' | 'customerName' | 'customerPhone' | 'deliveryAddress' | 'deliveryLat' | 'deliveryLng'>;
+function fulfillmentColumns(input: FulfillmentInput): Pick<PlacedOrder, 'fulfillmentType' | 'tableNumber' | 'customerName' | 'customerPhone' | 'deliveryAddress' | 'deliveryLat' | 'deliveryLng'> {
+  const isDelivery = input.fulfillmentType === 'DELIVERY';
+  return {
+    fulfillmentType: input.fulfillmentType,
+    tableNumber: isDelivery ? null : input.tableNumber || null,
+    customerName: input.customerName || null,
+    customerPhone: isDelivery ? input.customerPhone || null : null,
+    deliveryAddress: isDelivery ? input.deliveryAddress || null : null,
+    deliveryLat: isDelivery && input.deliveryLat != null ? input.deliveryLat : null,
+    deliveryLng: isDelivery && input.deliveryLng != null ? input.deliveryLng : null,
+  };
+}
+
 function toPlacedOrder(
   orderId: string,
   restaurant: RestaurantSnapshot,
-  input: Pick<PlaceOrderDTO, 'fulfillmentType' | 'tableNumber' | 'customerName' | 'customerPhone' | 'deliveryAddress'>,
+  input: FulfillmentInput,
   lines: PlacedOrderLine[],
   totals: Pick<PlacedOrder, 'subtotalCents' | 'taxCents' | 'serviceCents' | 'totalCents'>,
 ): PlacedOrder {
   return {
     orderId,
-    fulfillmentType: input.fulfillmentType,
-    tableNumber: input.fulfillmentType === 'DINE_IN' ? input.tableNumber || null : null,
-    customerName: input.customerName || null,
-    customerPhone: input.customerPhone || null,
-    deliveryAddress: input.fulfillmentType === 'DELIVERY' ? input.deliveryAddress || null : null,
+    ...fulfillmentColumns(input),
     ...totals,
     currencyCode: restaurant.currencyCode,
     lines,

@@ -12,6 +12,7 @@ import { ClassicHeaderActions, ClassicTableBadge } from '../classic/header-actio
 import { ClassicItemModal } from '../classic/classic-item-modal';
 import { cn } from '@/lib/cn';
 import { heroTransform } from '../shared/hero-strip';
+import { PromoTicker } from '../shared/promo-ticker';
 import type { CategoryWithItems, HeroPhoto, MenuItemSnapshot, ThemeProps } from '../theme.types';
 
 export type ShowcaseVariant = 'market' | 'neon' | 'coastal' | 'street';
@@ -120,6 +121,7 @@ export function ShowcasePage({ restaurant, categories, locale, variant }: ThemeP
         </div>
       </header>
 
+      <PromoTicker messages={restaurant.promoMessages} />
       <CategoryRail categories={categories} locale={locale} />
 
       <main className="mx-auto w-full max-w-5xl px-4 sm:px-6">

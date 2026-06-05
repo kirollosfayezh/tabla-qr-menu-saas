@@ -40,6 +40,18 @@ export class RestaurantRepository extends BaseRepository {
     return this.db.restaurant.update({ where: { id: restaurantId }, data });
   }
 
+  /**
+   * Move a restaurant onto a paid plan after a successful plan payment.
+   * Clears the free-trial deadline and activates the tenant so the diner menu
+   * (and the dashboard) come back online immediately.
+   */
+  public activatePlan(restaurantId: string, planKey: string): Promise<Restaurant> {
+    return this.db.restaurant.update({
+      where: { id: restaurantId },
+      data: { planKey, trialEndsAt: null, status: 'ACTIVE' },
+    });
+  }
+
   public updateTheme(
     restaurantId: string,
     themeId: string,
@@ -52,6 +64,26 @@ export class RestaurantRepository extends BaseRepository {
         status,
         publishedAt: status === 'ACTIVE' ? new Date() : undefined,
       },
+    });
+  }
+
+  /**
+   * Activate an (entitled) theme and persist the live customizer overrides
+   * (accent, mood, corners, typography) from the dashboard theme store.
+   *
+   * Status/publishedAt are decided by the caller so this never un-suspends a
+   * SUSPENDED tenant and never overwrites the original publish timestamp.
+   */
+  public saveActiveTheme(
+    restaurantId: string,
+    themeId: string,
+    customization: Prisma.InputJsonValue,
+    status: Restaurant['status'],
+    publishedAt: Date | null,
+  ): Promise<Restaurant> {
+    return this.db.restaurant.update({
+      where: { id: restaurantId },
+      data: { themeId, themeCustomization: customization, status, publishedAt },
     });
   }
 }

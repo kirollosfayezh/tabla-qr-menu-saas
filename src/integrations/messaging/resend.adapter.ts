@@ -24,6 +24,7 @@ export class ResendAdapter implements IMessagingProvider {
         subject: message.subject,
         html: message.html,
         text: message.text,
+        attachments: message.attachments,
       }),
     });
     if (!res.ok) {

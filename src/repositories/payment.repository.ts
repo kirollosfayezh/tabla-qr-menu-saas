@@ -7,6 +7,7 @@ export interface CreatePaymentInput {
   amountCents: number;
   currencyCode: string;
   themeId: string | null;
+  planKey: string | null;
   rawWebhookPayload: Prisma.InputJsonValue;
 }
 
@@ -30,6 +31,7 @@ export class PaymentRepository extends BaseRepository {
         userId: input.userId,
         amountCents: input.amountCents,
         currencyCode: input.currencyCode,
+        planKey: input.planKey,
         rawWebhookPayload: input.rawWebhookPayload,
       },
     });
@@ -52,6 +54,32 @@ export class PaymentRepository extends BaseRepository {
 
   public findById(paymentId: string): Promise<Payment | null> {
     return this.db.payment.findUnique({ where: { id: paymentId } });
+  }
+
+  /**
+   * True if this restaurant has already paid for this theme (a SUCCESS payment exists).
+   * Used to grant re-selection of an owned paid theme without charging again.
+   * Raw SQL because `theme_id` is not in the generated client.
+   */
+  public async hasSuccessfulThemePayment(restaurantId: string, themeId: string): Promise<boolean> {
+    const rows = await this.db.$queryRaw<Array<{ exists: boolean }>>`
+      SELECT EXISTS (
+        SELECT 1 FROM payments
+        WHERE restaurant_id = ${restaurantId}::uuid
+          AND theme_id = ${themeId}::uuid
+          AND status = 'SUCCESS'
+      ) AS "exists"
+    `;
+    return rows[0]?.exists ?? false;
+  }
+
+  /** Read the target `plan_key` of a Payment row (null for theme-only payments). */
+  public async findPlanKeyFor(paymentId: string): Promise<string | null> {
+    const row = await this.db.payment.findUnique({
+      where: { id: paymentId },
+      select: { planKey: true },
+    });
+    return row?.planKey ?? null;
   }
 
   /** Read `theme_id` from a Payment row via raw SQL (column not yet in the generated client). */

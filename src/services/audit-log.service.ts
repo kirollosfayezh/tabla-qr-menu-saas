@@ -6,14 +6,20 @@ export type AuditAction =
   | 'restaurant.suspend'
   | 'restaurant.activate'
   | 'restaurant.set_status'
+  | 'restaurant.delete'
   | 'user.set_role'
   | 'payment.refund'
+  | 'payment.manual_confirm'
+  | 'payment_method.enable'
+  | 'payment_method.disable'
   | 'theme.create'
   | 'theme.update'
   | 'theme.delete'
   | 'package.create'
   | 'package.update'
-  | 'package.delete';
+  | 'package.delete'
+  | 'email.broadcast'
+  | 'restaurant.assign_plan';
 
 export class AuditLogService {
   constructor(private readonly repo: AuditLogRepository = new AuditLogRepository()) {}

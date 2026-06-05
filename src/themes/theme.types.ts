@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { ThemeOverrideDto } from '@/dtos/theme-customization.dto';
 
 /** A hero photo with persisted transforms applied by the studio editor. */
 export interface HeroPhoto {
@@ -31,6 +32,10 @@ export interface RestaurantSnapshot {
   status: 'PENDING_PAYMENT' | 'ACTIVE' | 'SUSPENDED';
   /** Active theme key (resolved from Restaurant.theme.key). */
   themeKey: string;
+  /** Live customizer overrides (accent / mood / corners / typography) from the theme store. */
+  themeCustomization: ThemeOverrideDto;
+  /** Scrolling promo messages shown in the ticker bar. Empty = no ticker. */
+  promoMessages: ReadonlyArray<string>;
 }
 
 export interface MenuItemOptionSnapshot {

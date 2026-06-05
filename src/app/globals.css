@@ -77,3 +77,123 @@ html[dir="rtl"] body {
 .marquee-track:hover {
   animation-play-state: paused;
 }
+
+/* ── Theme store + live preview helpers ────────────────────────────────── */
+.no-bar {
+  scrollbar-width: none;
+}
+.no-bar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes tabla-tkr {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+html[dir="rtl"] .tabla-tkr-rtl {
+  animation-direction: reverse;
+}
+
+@keyframes tabla-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.tabla-modal-fade {
+  animation: tabla-fade-in 0.2s ease;
+}
+
+@keyframes tabla-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.tabla-device-pop {
+  animation: tabla-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tabla-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tabla-dish-stagger > * {
+  animation: tabla-rise 0.3s ease both;
+}
+.tabla-dish-stagger > *:nth-child(2) { animation-delay: 0.04s; }
+.tabla-dish-stagger > *:nth-child(3) { animation-delay: 0.08s; }
+.tabla-dish-stagger > *:nth-child(4) { animation-delay: 0.12s; }
+.tabla-dish-stagger > *:nth-child(5) { animation-delay: 0.16s; }
+.tabla-dish-stagger > *:nth-child(n + 6) { animation-delay: 0.2s; }
+
+.tabla-card-hover:hover {
+  opacity: 1 !important;
+  background: rgba(15, 15, 26, 0.32) !important;
+}
+
+@media (max-width: 640px) {
+  .tabla-preview-header {
+    height: auto !important;
+    min-height: 64px;
+    flex-wrap: wrap;
+    align-items: stretch !important;
+    gap: 10px;
+    padding: 10px 12px !important;
+  }
+
+  .tabla-preview-title {
+    width: 100%;
+  }
+
+  .tabla-preview-title > div:last-child {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tabla-preview-title span {
+    min-width: 0;
+  }
+
+  .tabla-preview-devices {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .tabla-preview-devices > button {
+    flex: 1 0 auto;
+    justify-content: center;
+    min-width: 92px;
+  }
+
+  .tabla-preview-actions {
+    order: 2;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .tabla-preview-actions > button {
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 10px !important;
+    white-space: nowrap;
+  }
+
+  .tabla-customize-panel {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 5;
+    max-width: min(300px, 86vw);
+    box-shadow: 20px 0 60px rgba(0, 0, 0, 0.32);
+  }
+
+  .tabla-theme-card-footer {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .tabla-theme-card-preview {
+    justify-content: center;
+    width: 100%;
+  }
+}

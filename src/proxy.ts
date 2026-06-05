@@ -6,7 +6,7 @@ import { TENANT_HEADER, REQUEST_ID_HEADER, SLUG_REGEX } from '@/config/constants
 import { env } from '@/config/env';
 
 /**
- * Edge middleware: tenant rewrite + rate limiting + security headers.
+ * Edge proxy: tenant rewrite + rate limiting + security headers.
  *
  * Routing:
  *  - <sub>.root          → rewrite /  ->  /t/<sub>
@@ -17,7 +17,7 @@ import { env } from '@/config/env';
  * folder name starting with `_` is *private* and not registered as a route,
  * so a rewrite to `/_tenant/...` 404s and falls back to `/`.
  */
-export async function middleware(req: NextRequest): Promise<NextResponse> {
+export async function proxy(req: NextRequest): Promise<NextResponse> {
   const url = req.nextUrl.clone();
   const host = req.headers.get('host') ?? '';
   const { subdomain, reserved } = parseHost(host, env.APP_ROOT_DOMAIN);

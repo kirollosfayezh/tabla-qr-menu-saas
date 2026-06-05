@@ -34,6 +34,14 @@ export class AdminUserRepository extends BaseRepository {
   public findById(userId: string): Promise<User | null> {
     return this.db.user.findUnique({ where: { id: userId } });
   }
+
+  /** Minimal recipient list for broadcast email. Optionally filtered by role. */
+  public listRecipients(role?: UserRole): Promise<Array<{ email: string; name: string | null }>> {
+    return this.db.user.findMany({
+      where: role ? { role } : {},
+      select: { email: true, name: true },
+    });
+  }
 }
 
 function buildWhere(filters: Pick<AdminUserFilters, 'search' | 'role'>): Prisma.UserWhereInput {

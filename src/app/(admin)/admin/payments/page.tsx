@@ -3,6 +3,8 @@ import type { PaymentStatus } from '@prisma/client';
 import { AdminPageHeader } from '@/components/admin/page-header';
 import { requireAdmin } from '@/lib/admin/require-admin';
 import { AdminPaymentRepository } from '@/repositories/admin/admin-payment.repository';
+import { PaymentMethodRepository } from '@/repositories/payment-method.repository';
+import { PaymentMethodsToggles } from './payment-methods-toggles';
 import { PaymentsTable } from './payments-table';
 
 export const metadata = { title: 'Payments · Admin' };
@@ -19,10 +21,14 @@ export default async function AdminPaymentsPage({
   const t = await getTranslations('admin.payments');
   const params = await searchParams;
   const status = VALID.includes(params.status as PaymentStatus) ? (params.status as PaymentStatus) : undefined;
-  const rows = await new AdminPaymentRepository().list({ status, take: PAGE_SIZE, skip: 0 });
+  const [rows, methodSettings] = await Promise.all([
+    new AdminPaymentRepository().list({ status, take: PAGE_SIZE, skip: 0 }),
+    new PaymentMethodRepository().listAll(),
+  ]);
   return (
     <div className="space-y-6">
       <AdminPageHeader title={t('title')} description={t('description')} />
+      <PaymentMethodsToggles settings={methodSettings} />
       <PaymentsTable rows={rows} initialStatus={status ?? ''} />
     </div>
   );

@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import type { PaymentStatus } from '@prisma/client';
 import type { AdminPaymentRow } from '@/repositories/admin/admin-payment.repository';
-import { refundPaymentAction } from '@/app/actions/admin.actions';
+import { confirmManualPaymentAction, refundPaymentAction } from '@/app/actions/admin.actions';
 
 const STATUS_KEYS: ReadonlyArray<{ value: '' | PaymentStatus; key: string }> = [
   { value: '', key: 'all' },
@@ -95,6 +95,17 @@ function Row({ row }: { row: AdminPaymentRow }): React.JSX.Element {
     });
   }
 
+  function confirmPaid(): void {
+    if (!window.confirm('Confirm this manual payment and activate its plan/theme?')) return;
+    setErr('');
+    start(async () => {
+      const result = await confirmManualPaymentAction({ paymentId: row.id });
+      if (!result.ok) setErr(result.message);
+    });
+  }
+
+  const description = row.theme?.name ?? row.themePackage?.name ?? row.planKey ?? '—';
+
   return (
     <tr className="border-t border-border-subtle">
       <td className="px-4 py-3 font-mono text-xs text-text-tertiary">#{row.id.slice(0, 8)}</td>
@@ -103,7 +114,7 @@ function Row({ row }: { row: AdminPaymentRow }): React.JSX.Element {
         <p className="text-xs text-text-tertiary">/{row.restaurant.slug}</p>
       </td>
       <td className="px-4 py-3 text-text-secondary">{row.user.email}</td>
-      <td className="px-4 py-3 text-text-secondary">{row.themePackage?.name ?? '—'}</td>
+      <td className="px-4 py-3 text-text-secondary">{description}</td>
       <td className="px-4 py-3 font-mono font-bold text-text-primary">{(row.amountCents / 100).toFixed(2)} {row.currencyCode}</td>
       <td className="px-4 py-3">
         <span className={`inline-flex h-6 items-center rounded-[4px] px-2.5 text-xs font-semibold ${STYLES[row.status]}`}>
@@ -112,6 +123,9 @@ function Row({ row }: { row: AdminPaymentRow }): React.JSX.Element {
       </td>
       <td className="px-4 py-3 text-text-tertiary">{row.paidAt ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(row.paidAt) : '—'}</td>
       <td className="px-4 py-3">
+        {row.status === 'PENDING' ? (
+          <button type="button" disabled={pending} onClick={confirmPaid} className="me-2 rounded-full border border-border-default px-3 py-1 text-xs font-semibold text-text-primary disabled:opacity-50">Confirm paid</button>
+        ) : null}
         {row.status === 'SUCCESS' ? (
           <button type="button" disabled={pending} onClick={refund} className="rounded-full border border-border-default px-3 py-1 text-xs font-semibold text-text-primary disabled:opacity-50">{t('actions.refund')}</button>
         ) : null}

@@ -1,8 +1,9 @@
-import type { Restaurant } from '@prisma/client';
+import type { Prisma, Restaurant } from '@prisma/client';
 import { RestaurantRepository } from '@/repositories/restaurant.repository';
 import { ThemeRepository } from '@/repositories/theme.repository';
 import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/errors';
 import { RESERVED_SUBDOMAINS } from '@/config/constants';
+import { trialEndsFromNow } from '@/config/plans';
 import type { CreateRestaurantDTO, UpdateBrandingDTO, UpdateSettingsDTO } from '@/dtos/restaurant.dto';
 
 export interface SlugCheck {
@@ -34,6 +35,7 @@ export class RestaurantService {
    * - Enforces single-restaurant-per-owner (MVP).
    * - Re-checks slug uniqueness inside the same call to avoid a TOCTOU race.
    * - Free theme → status ACTIVE + publishedAt now. Paid → PENDING_PAYMENT.
+   * - Starts the owner on the free trial with a 5-day deadline; paid upgrades clear it.
    */
   public async createForUser(ownerId: string, input: CreateRestaurantDTO): Promise<Restaurant> {
     const existing = await this.restaurants.findByOwnerId(ownerId);
@@ -65,6 +67,7 @@ export class RestaurantService {
       secondaryColor: input.secondaryColor,
       accentColor: input.accentColor,
       currencyCode: input.currencyCode,
+      trialEndsAt: trialEndsFromNow(),
       status: isFree ? 'ACTIVE' : 'PENDING_PAYMENT',
       publishedAt: isFree ? new Date() : null,
       owner: { connect: { id: ownerId } },
@@ -87,6 +90,8 @@ export class RestaurantService {
       heroPhotos: input.heroPhotos,
       heroLayout: input.heroLayout,
       heroImageScale: input.heroImageScale,
+      themeCustomization: input.themeCustomization as Prisma.InputJsonValue,
+      promoMessages: input.promoMessages,
     });
   }
 

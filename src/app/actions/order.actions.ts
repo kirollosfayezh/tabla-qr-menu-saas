@@ -36,6 +36,8 @@ export async function placeOrderAction(
       customerName: placed.customerName,
       customerPhone: placed.customerPhone,
       deliveryAddress: placed.deliveryAddress,
+      deliveryLat: placed.deliveryLat,
+      deliveryLng: placed.deliveryLng,
       subtotalCents: placed.subtotalCents,
       taxCents: placed.taxCents,
       serviceCents: placed.serviceCents,

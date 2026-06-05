@@ -8,6 +8,7 @@ import { ModernItemCard } from './modern-item-card';
 import { ModernItemModal } from './modern-item-modal';
 import { PageViewBeacon } from '../classic/page-view-beacon';
 import { CartBar } from '@/app/t/[slug]/cart/cart-bar';
+import { PromoTicker } from '../shared/promo-ticker';
 import { emitAnalyticsEvent } from '@/lib/analytics/emit';
 import { localizedField } from '../helpers';
 import type { MenuItemSnapshot, ThemeProps } from '../theme.types';
@@ -28,9 +29,10 @@ export function ModernPage({ restaurant, categories, locale }: ThemeProps): Reac
     >
       <PageViewBeacon restaurantId={restaurant.id} />
       <ModernHeader restaurant={restaurant} locale={locale} />
+      <PromoTicker messages={restaurant.promoMessages} />
       {categories.length > 0 ? <ModernTabs categories={categories} locale={locale} /> : null}
 
-      <main className="mx-auto w-full max-w-3xl px-5 pt-2">
+      <main className="mx-auto w-full max-w-3xl px-5 pt-2 @5xl:max-w-6xl">
         {categories.length === 0 ? (
           <p className="rounded-2xl bg-[var(--d-surface)] p-8 text-center text-sm text-[var(--d-text-soft)]">
             {t('menuComingSoon')}
@@ -41,7 +43,7 @@ export function ModernPage({ restaurant, categories, locale }: ThemeProps): Reac
               <h2 className="mb-3 font-display text-2xl font-bold tracking-tight text-[var(--d-text)]">
                 {localizedField(cat.name, cat.nameAr, locale)}
               </h2>
-              <div className="flex flex-col gap-4">
+              <div className="grid gap-4 @2xl:grid-cols-2 @5xl:grid-cols-3">
                 {cat.items.map((item) => (
                   <ModernItemCard
                     key={item.id}

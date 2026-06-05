@@ -4,14 +4,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import type { RestaurantStatus } from '@prisma/client';
-import { setRestaurantStatusAction } from '@/app/actions/admin.actions';
+import { setRestaurantStatusAction, assignPlanAction, deleteRestaurantAction } from '@/app/actions/admin.actions';
 
-/** Plain-object projection sent from the server page to this client component. */
 export interface RestaurantsTableRow {
   id: string;
   slug: string;
   name: string;
   status: RestaurantStatus;
+  planKey: string;
   createdAt: Date;
   ordersCount: number;
   owner: { email: string; name: string | null };
@@ -28,9 +28,10 @@ interface Props {
   rows: ReadonlyArray<RestaurantsTableRow>;
   initialSearch: string;
   initialStatus: '' | RestaurantStatus;
+  plans: ReadonlyArray<{ key: string; name: string }>;
 }
 
-export function RestaurantsTable({ rows, initialSearch, initialStatus }: Props): React.JSX.Element {
+export function RestaurantsTable({ rows, initialSearch, initialStatus, plans }: Props): React.JSX.Element {
   const t = useTranslations('admin.restaurants');
   const router = useRouter();
   const params = useSearchParams();
@@ -47,10 +48,7 @@ export function RestaurantsTable({ rows, initialSearch, initialStatus }: Props):
   return (
     <div className="space-y-4">
       <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          applyFilters();
-        }}
+        onSubmit={(e) => { e.preventDefault(); applyFilters(); }}
         className="flex flex-wrap items-center gap-3 rounded-2xl border border-border-subtle bg-surface-base p-4"
       >
         <input
@@ -61,11 +59,7 @@ export function RestaurantsTable({ rows, initialSearch, initialStatus }: Props):
         />
         <select
           value={status}
-          onChange={(e) => {
-            const v = e.target.value as '' | RestaurantStatus;
-            setStatus(v);
-            applyFilters(search, v);
-          }}
+          onChange={(e) => { const v = e.target.value as '' | RestaurantStatus; setStatus(v); applyFilters(search, v); }}
           className="h-10 rounded-lg border border-border-default bg-surface-base px-3 text-sm outline-none focus:border-brand-primary"
         >
           {STATUS_OPTIONS.map((opt) => (
@@ -86,15 +80,16 @@ export function RestaurantsTable({ rows, initialSearch, initialStatus }: Props):
                 <Th>{t('cols.owner')}</Th>
                 <Th>{t('cols.orders')}</Th>
                 <Th>{t('cols.status')}</Th>
+                <Th>{t('cols.plan')}</Th>
                 <Th>{t('cols.created')}</Th>
                 <Th>{t('cols.actions')}</Th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">{t('empty')}</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-text-tertiary">{t('empty')}</td></tr>
               ) : (
-                rows.map((row) => <Row key={row.id} row={row} />)
+                rows.map((row) => <Row key={row.id} row={row} plans={plans} />)
               )}
             </tbody>
           </table>
@@ -108,8 +103,9 @@ function Th({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <th className="border-b border-border-subtle px-4 py-2.5 text-start text-xs font-semibold uppercase tracking-[0.04em]">{children}</th>;
 }
 
-function Row({ row }: { row: RestaurantsTableRow }): React.JSX.Element {
+function Row({ row, plans }: { row: RestaurantsTableRow; plans: ReadonlyArray<{ key: string; name: string }> }): React.JSX.Element {
   const t = useTranslations('admin.restaurants');
+  const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
 
@@ -118,6 +114,28 @@ function Row({ row }: { row: RestaurantsTableRow }): React.JSX.Element {
     start(async () => {
       const result = await setRestaurantStatusAction({ restaurantId: row.id, status: next });
       if (!result.ok) setError(result.message);
+    });
+  }
+
+  function setPlan(planKey: string): void {
+    if (!planKey) return;
+    setError('');
+    start(async () => {
+      const result = await assignPlanAction({ restaurantId: row.id, planKey });
+      if (!result.ok) setError(result.message);
+    });
+  }
+
+  function deleteRestaurant(): void {
+    if (!window.confirm(t('actions.deleteConfirm', { name: row.name }))) return;
+    setError('');
+    start(async () => {
+      const result = await deleteRestaurantAction({ restaurantId: row.id });
+      if (result.ok) {
+        router.refresh();
+      } else {
+        setError(result.message);
+      }
     });
   }
 
@@ -133,6 +151,18 @@ function Row({ row }: { row: RestaurantsTableRow }): React.JSX.Element {
       </td>
       <td className="px-4 py-3 font-mono text-text-primary">{row.ordersCount}</td>
       <td className="px-4 py-3"><StatusPill status={row.status} /></td>
+      <td className="px-4 py-3">
+        <select
+          value={row.planKey}
+          disabled={pending}
+          onChange={(e) => setPlan(e.target.value)}
+          className="h-8 rounded-lg border border-border-default bg-surface-base px-2 text-xs font-semibold text-text-primary outline-none focus:border-brand-primary disabled:opacity-50"
+        >
+          {plans.map((p) => (
+            <option key={p.key} value={p.key}>{p.name}</option>
+          ))}
+        </select>
+      </td>
       <td className="px-4 py-3 text-text-tertiary">{new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(row.createdAt)}</td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -142,6 +172,14 @@ function Row({ row }: { row: RestaurantsTableRow }): React.JSX.Element {
           {row.status !== 'ACTIVE' ? (
             <button type="button" disabled={pending} onClick={() => setStatus('ACTIVE')} className="rounded-full bg-brand-primary px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">{t('actions.activate')}</button>
           ) : null}
+          <button
+            type="button"
+            disabled={pending}
+            onClick={deleteRestaurant}
+            className="rounded-full border border-danger/40 px-3 py-1 text-xs font-semibold text-danger disabled:opacity-50"
+          >
+            {t('actions.delete')}
+          </button>
           {error ? <span className="text-xs text-danger">{error}</span> : null}
         </div>
       </td>

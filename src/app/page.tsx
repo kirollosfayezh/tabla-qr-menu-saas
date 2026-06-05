@@ -3,7 +3,7 @@ import { MarketingNav } from '@/components/marketing/marketing-nav';
 import { MarketingHero } from '@/components/marketing/marketing-hero';
 import { MarketingFeatures } from '@/components/marketing/marketing-features';
 import { MarketingHow } from '@/components/marketing/marketing-how';
-import { MarketingThemes } from '@/components/marketing/marketing-themes';
+import { MarketingStorefront } from '@/components/marketing/marketing-storefront';
 import { MarketingPricing } from '@/components/marketing/marketing-pricing';
 import { MarketingFaq } from '@/components/marketing/marketing-faq';
 import { MarketingFooter } from '@/components/marketing/marketing-footer';
@@ -17,7 +17,10 @@ export const metadata = {
 };
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  const dbPrices = await new PlanRepository().listPublicPrices().catch(() => []);
+  const [dbPlans, tThemes] = await Promise.all([
+    new PlanRepository().listActiveWithThemes().catch(() => []),
+    getTranslations('marketing.themes'),
+  ]);
   return (
     <>
       <MarketingNav />
@@ -25,8 +28,13 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         <MarketingHero />
         <MarketingFeatures />
         <MarketingHow />
-        <MarketingThemes />
-        <MarketingPricing dbPrices={dbPrices} />
+        <MarketingStorefront
+          label={tThemes('label')}
+          heading={tThemes('heading')}
+          sub={tThemes('sub')}
+          chooseLabel={tThemes('choose')}
+        />
+        <MarketingPricing dbPlans={dbPlans} />
         <MarketingFaq />
         <CtaSection />
       </main>

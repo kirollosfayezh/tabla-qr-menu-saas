@@ -32,6 +32,7 @@ export function CartDrawer({ restaurant, locale, open, onClose }: Props): React.
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pending, startTransition] = useTransition();
   const cart = useCartStore(restaurant.id, (state) => state);
   const totals = useCartTotals(cart.lines, restaurant.taxPercent, restaurant.serviceChargePercent);
@@ -73,7 +74,7 @@ export function CartDrawer({ restaurant, locale, open, onClose }: Props): React.
         <footer className="space-y-4 border-t border-[var(--d-border)] p-5">
           <OrderDetails
             fulfillmentType={fulfillmentType}
-            setFulfillmentType={setFulfillmentType}
+            setFulfillmentType={(value) => { setFulfillmentType(value); if (value === 'DINE_IN') setCoords(null); }}
             tableNumber={cart.tableNumber}
             setTableNumber={cart.setTableNumber}
             customerName={customerName}
@@ -82,13 +83,15 @@ export function CartDrawer({ restaurant, locale, open, onClose }: Props): React.
             setCustomerPhone={setCustomerPhone}
             deliveryAddress={deliveryAddress}
             setDeliveryAddress={setDeliveryAddress}
+            coords={coords}
+            setCoords={setCoords}
           />
           <Totals totals={totals} currencyCode={restaurant.currencyCode} locale={locale} />
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <button
             type="button"
             disabled={pending || cart.lines.length === 0}
-            onClick={() => submitOrder({ restaurant, locale, cart, fulfillmentType, customerName, customerPhone, deliveryAddress, setError, startTransition })}
+            onClick={() => submitOrder({ restaurant, locale, cart, fulfillmentType, customerName, customerPhone, deliveryAddress, coords, setError, startTransition })}
             className="inline-flex w-full items-center justify-center gap-2.5 rounded-2xl px-4 py-4 text-sm font-bold text-white shadow-lg disabled:opacity-50"
             style={{ backgroundColor: pending || cart.lines.length === 0 ? '#9ca3af' : '#25D366' }}
           >
@@ -102,18 +105,7 @@ export function CartDrawer({ restaurant, locale, open, onClose }: Props): React.
   );
 }
 
-function OrderDetails({
-  fulfillmentType,
-  setFulfillmentType,
-  tableNumber,
-  setTableNumber,
-  customerName,
-  setCustomerName,
-  customerPhone,
-  setCustomerPhone,
-  deliveryAddress,
-  setDeliveryAddress,
-}: {
+interface OrderDetailsProps {
   fulfillmentType: 'DINE_IN' | 'DELIVERY';
   setFulfillmentType: (value: 'DINE_IN' | 'DELIVERY') => void;
   tableNumber: string;
@@ -124,7 +116,12 @@ function OrderDetails({
   setCustomerPhone: (value: string) => void;
   deliveryAddress: string;
   setDeliveryAddress: (value: string) => void;
-}): React.JSX.Element {
+  coords: { lat: number; lng: number } | null;
+  setCoords: (value: { lat: number; lng: number } | null) => void;
+}
+
+function OrderDetails(props: OrderDetailsProps): React.JSX.Element {
+  const { fulfillmentType, setFulfillmentType, tableNumber, setTableNumber } = props;
   const t = useTranslations('tenant.cart');
   return (
     <div className="rounded-2xl bg-[var(--d-primary-soft)] p-4">
@@ -151,12 +148,67 @@ function OrderDetails({
           <input value={tableNumber} onChange={(event) => setTableNumber(event.target.value)} placeholder={t('tableNumber')} className="w-full rounded-xl border border-[var(--d-border)] bg-[var(--d-surface)] px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--d-primary)]" maxLength={20} />
         </label>
       ) : (
-        <div className="mt-3 grid gap-3">
-          <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder={t('customerName')} className="w-full rounded-xl border border-[var(--d-border)] bg-[var(--d-surface)] px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--d-primary)]" maxLength={80} />
-          <input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder={t('customerPhone')} className="w-full rounded-xl border border-[var(--d-border)] bg-[var(--d-surface)] px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--d-primary)]" maxLength={30} />
-          <textarea value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder={t('deliveryAddress')} className="min-h-20 w-full resize-none rounded-xl border border-[var(--d-border)] bg-[var(--d-surface)] px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--d-primary)]" maxLength={240} />
-        </div>
+        <DeliveryFields {...props} />
       )}
+    </div>
+  );
+}
+
+function DeliveryFields({
+  customerName, setCustomerName, customerPhone, setCustomerPhone,
+  deliveryAddress, setDeliveryAddress, coords, setCoords,
+}: OrderDetailsProps): React.JSX.Element {
+  const t = useTranslations('tenant.cart');
+  const inputClass = 'w-full rounded-xl border border-[var(--d-border)] bg-[var(--d-surface)] px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--d-primary)]';
+  return (
+    <div className="mt-3 grid gap-3">
+      <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder={t('customerName')} className={inputClass} maxLength={80} />
+      <input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder={t('customerPhone')} className={inputClass} maxLength={30} />
+      <textarea value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder={t('deliveryAddress')} className={`min-h-20 resize-none ${inputClass}`} maxLength={240} />
+      <LocationPicker coords={coords} setCoords={setCoords} />
+    </div>
+  );
+}
+
+function LocationPicker({ coords, setCoords }: Pick<OrderDetailsProps, 'coords' | 'setCoords'>): React.JSX.Element {
+  const t = useTranslations('tenant.cart');
+  const [status, setStatus] = useState<'idle' | 'locating' | 'error'>('idle');
+
+  function locate(): void {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) { setStatus('error'); return; }
+    setStatus('locating');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setStatus('idle'); },
+      () => setStatus('error'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      <button
+        type="button"
+        onClick={locate}
+        disabled={status === 'locating'}
+        className={cn(
+          'flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-bold transition disabled:opacity-60',
+          coords ? 'border-[var(--d-primary)] text-[var(--d-primary)]' : 'border-[var(--d-border)] text-[var(--d-text)]',
+        )}
+      >
+        <span aria-hidden>📍</span>
+        {status === 'locating' ? t('locating') : coords ? t('locationSet') : t('useLocation')}
+      </button>
+      {coords ? (
+        <a
+          href={`https://maps.google.com/?q=${coords.lat},${coords.lng}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-center text-xs font-semibold text-[var(--d-primary)] underline"
+        >
+          {t('viewLocation')}
+        </a>
+      ) : null}
+      {status === 'error' ? <p className="text-center text-xs font-semibold text-red-600">{t('locationError')}</p> : null}
     </div>
   );
 }
@@ -180,7 +232,7 @@ function Totals({ totals, currencyCode, locale }: {
   );
 }
 
-function submitOrder(args: {
+interface SubmitArgs {
   restaurant: RestaurantSnapshot;
   locale: 'en' | 'ar';
   cart: CartState;
@@ -188,24 +240,17 @@ function submitOrder(args: {
   customerName: string;
   customerPhone: string;
   deliveryAddress: string;
+  coords: { lat: number; lng: number } | null;
   setError: (value: string) => void;
-  startTransition: (callback: () => void) => void;
-}): void {
+}
+
+function submitOrder(args: SubmitArgs & { startTransition: (callback: () => void) => void }): void {
   args.startTransition(() => {
     void submitOrderAsync(args);
   });
 }
 
-async function submitOrderAsync(args: {
-  restaurant: RestaurantSnapshot;
-  locale: 'en' | 'ar';
-  cart: CartState;
-  fulfillmentType: 'DINE_IN' | 'DELIVERY';
-  customerName: string;
-  customerPhone: string;
-  deliveryAddress: string;
-  setError: (value: string) => void;
-}): Promise<void> {
+async function submitOrderAsync(args: SubmitArgs): Promise<void> {
   args.setError('');
   const result = await placeOrderAction(args.restaurant.slug, {
     restaurantId: args.restaurant.id,
@@ -215,6 +260,8 @@ async function submitOrderAsync(args: {
     customerName: args.customerName,
     customerPhone: args.customerPhone,
     deliveryAddress: args.deliveryAddress,
+    deliveryLat: args.coords?.lat,
+    deliveryLng: args.coords?.lng,
     lines: args.cart.lines.map((line) => ({
       itemId: line.itemId,
       qty: line.qty,

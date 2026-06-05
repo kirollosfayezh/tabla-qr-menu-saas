@@ -15,6 +15,8 @@ export const PlaceOrderSchema = z.object({
   customerName: z.string().trim().max(80).optional().or(z.literal('')),
   customerPhone: z.string().trim().max(30).optional().or(z.literal('')),
   deliveryAddress: z.string().trim().max(240).optional().or(z.literal('')),
+  deliveryLat: z.number().gte(-90).lte(90).optional(),
+  deliveryLng: z.number().gte(-180).lte(180).optional(),
   locale: z.enum(['en', 'ar']),
   deviceInfo: z.string().trim().max(500).optional().or(z.literal('')),
 }).superRefine((value, ctx) => {

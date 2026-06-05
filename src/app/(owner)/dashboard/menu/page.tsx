@@ -4,6 +4,8 @@ import { RestaurantRepository } from '@/repositories/restaurant.repository';
 import { PlanRepository } from '@/repositories/plan.repository';
 import { MenuService } from '@/services/menu.service';
 import { MenuClient } from './menu-client';
+import { DownloadTemplateButton } from './download-template-button';
+import { UploadTemplateButton } from './upload-template-button';
 
 export const metadata = { title: 'Menu · Tabla' };
 
@@ -18,7 +20,7 @@ export default async function MenuPage(): Promise<React.JSX.Element> {
   const plan = await new PlanRepository().findByKey(restaurant.planKey)
     ?? await new PlanRepository().findByKey('free_trial');
   const maxItems      = plan?.maxItems      ?? 5;
-  const maxCategories = plan?.maxCategories ?? 2;
+  const maxCategories = plan?.maxCategories ?? 5;
 
   const [categories, items] = await Promise.all([
     service.listCategories(ctx.restaurantId),
@@ -27,9 +29,15 @@ export default async function MenuPage(): Promise<React.JSX.Element> {
 
   return (
     <div className="space-y-4">
-      <header className="space-y-1">
-        <h1 className="font-display text-2xl font-semibold text-text-primary">{t('title')}</h1>
-        <p className="text-sm text-text-secondary">{t('subtitle')}</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="font-display text-2xl font-semibold text-text-primary">{t('title')}</h1>
+          <p className="text-sm text-text-secondary">{t('subtitle')}</p>
+        </div>
+        <div className="flex flex-wrap items-start justify-end gap-2">
+          <DownloadTemplateButton />
+          <UploadTemplateButton />
+        </div>
       </header>
       <MenuClient
         data={{

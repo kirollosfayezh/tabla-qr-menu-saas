@@ -8,6 +8,7 @@ import { ClassicItemCard } from './classic-item-card';
 import { ClassicItemModal } from './classic-item-modal';
 import { PageViewBeacon } from './page-view-beacon';
 import { CartBar } from '@/app/t/[slug]/cart/cart-bar';
+import { PromoTicker } from '../shared/promo-ticker';
 import { localizedField } from '../helpers';
 import { emitAnalyticsEvent } from '@/lib/analytics/emit';
 import type { MenuItemSnapshot, ThemeProps } from '../theme.types';
@@ -25,11 +26,12 @@ export function ClassicPage({ restaurant, categories, locale }: ThemeProps): Rea
     >
       <PageViewBeacon restaurantId={restaurant.id} />
       <ClassicHeader restaurant={restaurant} locale={locale} />
+      <PromoTicker messages={restaurant.promoMessages} />
       {categories.length > 0 ? (
         <ClassicTabs categories={categories} locale={locale} />
       ) : null}
 
-      <main className="mx-auto w-full max-w-3xl px-4 pt-2">
+      <main className="mx-auto w-full max-w-3xl px-4 pt-2 @5xl:max-w-5xl">
         {categories.length === 0 ? (
           <p className="rounded-2xl border border-[var(--d-border)] bg-[var(--d-surface)] p-8 text-center text-sm text-[var(--d-text-soft)] shadow-sm">
             {t('menuComingSoon')}
@@ -40,7 +42,7 @@ export function ClassicPage({ restaurant, categories, locale }: ThemeProps): Rea
               <h2 className="mb-1 font-serif text-[22px] font-semibold text-[var(--d-text)]">
                 {localizedField(cat.name, cat.nameAr, locale)}
               </h2>
-              <div className="divide-y divide-[var(--d-border)]">
+              <div className="@5xl:grid @5xl:grid-cols-2 @5xl:gap-x-12">
                 {cat.items.map((item) => (
                   <ClassicItemCard
                     key={item.id}

@@ -1,9 +1,10 @@
-import type { Payment, Restaurant, RestaurantStatus, Theme, ThemePackage, User, UserRole } from '@prisma/client';
+import type { Payment, PaymentMethodKey, PaymentMethodSetting, Prisma, Restaurant, RestaurantStatus, Theme, ThemePackage, User, UserRole } from '@prisma/client';
 import { AdminRestaurantRepository } from '@/repositories/admin/admin-restaurant.repository';
 import { AdminUserRepository } from '@/repositories/admin/admin-user.repository';
 import { AdminPaymentRepository } from '@/repositories/admin/admin-payment.repository';
 import { AdminThemeRepository } from '@/repositories/admin/admin-theme.repository';
 import { PaymentRepository } from '@/repositories/payment.repository';
+import { PaymentMethodRepository } from '@/repositories/payment-method.repository';
 import { AuditLogService } from './audit-log.service';
 import { PaymentService } from './payment.service';
 import { ForbiddenError, NotFoundError } from '@/lib/errors/errors';
@@ -31,6 +32,7 @@ export class AdminService {
     private readonly audit = new AuditLogService(),
     private readonly paymentService = new PaymentService(),
     private readonly paymentRepo = new PaymentRepository(),
+    private readonly paymentMethods = new PaymentMethodRepository(),
   ) {}
 
   public async setRestaurantStatus(
@@ -38,7 +40,8 @@ export class AdminService {
     restaurantId: string,
     status: RestaurantStatus,
   ): Promise<Restaurant> {
-    const before = await this.restaurants.list({ take: 1, skip: 0 }).then((rows) => rows[0]);
+    const before = await this.restaurants.findById(restaurantId);
+    if (!before) throw new NotFoundError('Restaurant');
     const updated = await this.restaurants.setStatus(restaurantId, status);
     await this.audit.record(
       actor,
@@ -47,6 +50,25 @@ export class AdminService {
       { newStatus: status, previousStatus: before?.status ?? null },
     );
     return updated;
+  }
+
+  public async deleteRestaurant(actor: AdminContext, restaurantId: string): Promise<Restaurant> {
+    const restaurant = await this.restaurants.findById(restaurantId);
+    if (!restaurant) throw new NotFoundError('Restaurant');
+    const deleted = await this.restaurants.delete(restaurantId);
+    await this.audit.record(
+      actor,
+      'restaurant.delete',
+      { type: 'restaurant', id: restaurantId },
+      {
+        name: restaurant.name,
+        slug: restaurant.slug,
+        ownerId: restaurant.ownerId,
+        status: restaurant.status,
+        planKey: restaurant.planKey,
+      },
+    );
+    return deleted;
   }
 
   public async setUserRole(actor: AdminContext, userId: string, role: UserRole): Promise<User> {
@@ -86,6 +108,38 @@ export class AdminService {
     return refreshed;
   }
 
+  public async confirmManualPayment(actor: AdminContext, paymentId: string): Promise<Payment> {
+    const refreshed = await this.paymentService.confirmManualPayment(paymentId);
+    await this.audit.record(
+      actor,
+      'payment.manual_confirm',
+      { type: 'payment', id: paymentId },
+      {
+        amountCents: refreshed.amountCents,
+        currencyCode: refreshed.currencyCode,
+        planKey: refreshed.planKey,
+        themeId: refreshed.themeId,
+      },
+    );
+    return refreshed;
+  }
+
+  /** Enable/disable a platform-wide checkout payment method (Card / Apple Pay / InstaPay). */
+  public async setPaymentMethodActive(
+    actor: AdminContext,
+    method: PaymentMethodKey,
+    isActive: boolean,
+  ): Promise<PaymentMethodSetting> {
+    const updated = await this.paymentMethods.setActive(method, isActive);
+    await this.audit.record(
+      actor,
+      isActive ? 'payment_method.enable' : 'payment_method.disable',
+      { type: 'payment_method', id: method },
+      { method, isActive },
+    );
+    return updated;
+  }
+
   public async createTheme(actor: AdminContext, input: CreateThemeDTO): Promise<Theme> {
     const created = await this.themes.create({
       key: input.key,
@@ -94,6 +148,7 @@ export class AdminService {
       description: input.description || null,
       descriptionAr: input.descriptionAr || null,
       previewImageUrl: input.previewImageUrl || null,
+      design: input.design as Prisma.InputJsonValue,
       isFree: input.isFree,
       priceCents: input.priceCents,
       isActive: input.isActive,
@@ -111,6 +166,7 @@ export class AdminService {
       description: input.description === '' ? null : input.description,
       descriptionAr: input.descriptionAr === '' ? null : input.descriptionAr,
       previewImageUrl: input.previewImageUrl === '' ? null : input.previewImageUrl,
+      design: input.design ? (input.design as Prisma.InputJsonValue) : undefined,
       isFree: input.isFree,
       priceCents: input.priceCents,
       isActive: input.isActive,
@@ -159,5 +215,16 @@ export class AdminService {
     const deleted = await this.themes.deletePackage(id);
     await this.audit.record(actor, 'package.delete', { type: 'package', id });
     return deleted;
+  }
+
+  public async assignPlan(actor: AdminContext, restaurantId: string, planKey: string): Promise<Restaurant> {
+    const updated = await this.restaurants.setPlan(restaurantId, planKey);
+    await this.audit.record(
+      actor,
+      'restaurant.assign_plan',
+      { type: 'restaurant', id: restaurantId },
+      { planKey },
+    );
+    return updated;
   }
 }

@@ -4,6 +4,7 @@ import { requireOwnerRestaurant } from '@/lib/tenant/require-restaurant';
 import { RestaurantRepository } from '@/repositories/restaurant.repository';
 import { ThemeRepository } from '@/repositories/theme.repository';
 import { MenuService } from '@/services/menu.service';
+import { ThemeOverrideSchema } from '@/dtos/theme-customization.dto';
 import { BrandingForm } from './branding-form';
 import type { CategoryWithItems } from '@/themes/theme.types';
 import { parseHeroPhotos } from '@/lib/hero-photos';
@@ -15,7 +16,10 @@ export default async function BrandingPage(): Promise<React.JSX.Element> {
   const ctx = await requireOwnerRestaurant();
   const restaurant = await new RestaurantRepository().findByOwnerId(ctx.userId);
   if (!restaurant) throw new Error('Restaurant missing');
-  const theme = restaurant.themeId ? await new ThemeRepository().findById(restaurant.themeId) : null;
+  const rawTheme = restaurant.themeId ? await new ThemeRepository().findById(restaurant.themeId) : null;
+  const theme = rawTheme?.isActive ? rawTheme : null;
+  const parsedOverride = ThemeOverrideSchema.safeParse(restaurant.themeCustomization ?? {});
+  const themeCustomization = parsedOverride.success ? parsedOverride.data : {};
   const menu = new MenuService();
   const [categories, items] = await Promise.all([
     menu.listCategories(restaurant.id),
@@ -60,6 +64,8 @@ export default async function BrandingPage(): Promise<React.JSX.Element> {
           heroImageScale: restaurant.heroImageScale,
           currencyCode: restaurant.currencyCode,
           themeKey: theme?.key ?? 'classic',
+          themeCustomization,
+          promoMessages: restaurant.promoMessages ?? [],
         }}
         previewCategories={previewCategories}
         publicMenuHref={`/t/${restaurant.slug}`}

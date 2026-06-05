@@ -7,6 +7,7 @@ export type AdminNavKey =
   | 'users'
   | 'analytics'
   | 'audit'
+  | 'email'
   | 'support';
 
 export interface AdminNavItem {
@@ -24,5 +25,6 @@ export const ADMIN_NAV_ITEMS: ReadonlyArray<AdminNavItem> = [
   { key: 'users',       href: '/admin/users',       i18nKey: 'nav.users' },
   { key: 'analytics',   href: '/admin/analytics',   i18nKey: 'nav.analytics' },
   { key: 'audit',       href: '/admin/audit',       i18nKey: 'nav.audit' },
+  { key: 'email',       href: '/admin/email',       i18nKey: 'nav.email' },
   { key: 'support',     href: '/admin/support',     i18nKey: 'nav.support' },
 ];

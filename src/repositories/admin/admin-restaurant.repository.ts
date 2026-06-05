@@ -36,8 +36,19 @@ export class AdminRestaurantRepository extends BaseRepository {
     return this.db.restaurant.count({ where: buildWhere(filters) });
   }
 
+  public findById(restaurantId: string): Promise<Restaurant | null> {
+    return this.db.restaurant.findUnique({ where: { id: restaurantId } });
+  }
+
   public setStatus(restaurantId: string, status: RestaurantStatus): Promise<Restaurant> {
     return this.db.restaurant.update({ where: { id: restaurantId }, data: { status } });
+  }
+
+  public setPlan(restaurantId: string, planKey: string): Promise<Restaurant> {
+    return this.db.restaurant.update({
+      where: { id: restaurantId },
+      data: { planKey, status: 'ACTIVE', trialEndsAt: null },
+    });
   }
 
   public async countByStatus(): Promise<Array<{ status: RestaurantStatus; count: number }>> {
@@ -46,6 +57,10 @@ export class AdminRestaurantRepository extends BaseRepository {
       _count: { _all: true },
     });
     return rows.map((row) => ({ status: row.status, count: row._count._all }));
+  }
+
+  public delete(restaurantId: string): Promise<Restaurant> {
+    return this.db.restaurant.delete({ where: { id: restaurantId } });
   }
 }
 

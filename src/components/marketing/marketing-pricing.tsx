@@ -4,18 +4,21 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { PlanCard, type PlanDef } from './plan-card';
-import type { PublicPlanPrice } from '@/repositories/plan.repository';
+import type { PublicPlanWithThemes } from '@/repositories/plan.repository';
 
 interface Props {
-  /** DB plan prices keyed by plan key. When provided, overrides i18n hardcoded prices. */
-  dbPrices?: PublicPlanPrice[];
+  dbPlans?: PublicPlanWithThemes[];
 }
 
-/** Landing-page inline pricing section with monthly/yearly billing toggle. */
-export function MarketingPricing({ dbPrices }: Props): React.JSX.Element {
+export function MarketingPricing({ dbPlans }: Props): React.JSX.Element {
   const t = useTranslations('marketing.pricing');
   const [yearly, setYearly] = useState(true);
-  const plans = t.raw('plans') as PlanDef[];
+
+  // DB plans are the source of truth when available.
+  // Fall back to i18n hardcoded plans only when DB is empty (e.g. before first seed).
+  const i18nPlans = t.raw('plans') as PlanDef[];
+  const hasDbPlans = (dbPlans?.length ?? 0) > 0;
+
   return (
     <section id="pricing" className="bg-surface-base py-24">
       <div className="mx-auto max-w-5xl px-6">
@@ -25,19 +28,32 @@ export function MarketingPricing({ dbPrices }: Props): React.JSX.Element {
           <p className="mt-3 text-lg text-text-secondary">{t('sub')}</p>
           <BillingToggle yearly={yearly} onChange={setYearly} />
         </div>
+
         <div className="grid gap-5 sm:grid-cols-3">
-          {plans.map((plan, index) => {
-            const dbPlan = dbPrices?.[index];
-            return (
-              <PlanCard
-                key={plan.name}
-                plan={plan}
-                yearly={yearly}
-                monthlyPriceCents={dbPlan?.monthlyPriceCents}
-                yearlyPriceCents={dbPlan?.yearlyPriceCents}
-              />
-            );
-          })}
+          {hasDbPlans
+            ? dbPlans!.map((dbPlan, i) => {
+                const i18n = i18nPlans[i];
+                return (
+                  <PlanCard
+                    key={dbPlan.key}
+                    plan={i18n ?? {
+                      name: dbPlan.name,
+                      desc: dbPlan.nameAr ?? '',
+                      monthlyPrice: dbPlan.monthlyPriceCents / 100,
+                      yearlyPrice: dbPlan.yearlyPriceCents / 100,
+                      cta: 'Get started',
+                      features: [],
+                    }}
+                    yearly={yearly}
+                    monthlyPriceCents={dbPlan.monthlyPriceCents}
+                    yearlyPriceCents={dbPlan.yearlyPriceCents}
+                    themes={dbPlan.themes.map((th) => th.name)}
+                  />
+                );
+              })
+            : i18nPlans.map((plan) => (
+                <PlanCard key={plan.name} plan={plan} yearly={yearly} />
+              ))}
         </div>
       </div>
     </section>

@@ -5,6 +5,7 @@ import { ForbiddenError, UnauthorizedError } from '@/lib/errors/errors';
 export interface OwnerContext {
   userId: string;
   restaurantId: string;
+  slug: string;
   currencyCode: string;
   defaultLocale: 'en' | 'ar';
 }
@@ -22,6 +23,7 @@ export async function requireOwnerRestaurant(): Promise<OwnerContext> {
   return {
     userId: session.user.id,
     restaurantId: restaurant.id,
+    slug: restaurant.slug,
     currencyCode: restaurant.currencyCode,
     defaultLocale: restaurant.defaultLocale,
   };

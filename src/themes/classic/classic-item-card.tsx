@@ -32,7 +32,7 @@ export function ClassicItemCard({ item, restaurantId, currencyCode, locale, onOp
   return (
     <article
       className={cn(
-        'flex w-full gap-3 py-4 text-start',
+        'flex w-full gap-3 border-b border-[var(--d-border)] py-4 text-start',
         !item.isAvailable && 'opacity-55',
       )}
     >

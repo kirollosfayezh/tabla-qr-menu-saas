@@ -18,6 +18,8 @@ export const RESERVED_SUBDOMAINS: ReadonlySet<string> = new Set([
   'onboarding',
 ]);
 
+export const FREE_TRIAL_DAYS = 5;
+
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 export const MAX_WA_URL_BYTES = 2048;
 export const CART_MIN_QTY = 1;

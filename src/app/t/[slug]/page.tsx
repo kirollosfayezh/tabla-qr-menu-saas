@@ -4,6 +4,7 @@ import { getLocale } from 'next-intl/server';
 import { getTranslations } from 'next-intl/server';
 import { PUBLIC_MENU_REVALIDATE_SECONDS } from '@/config/constants';
 import { PublicMenuService } from '@/services/public-menu.service';
+import { publicMenuTag } from '@/lib/cache/public-menu-cache';
 import { ThemeRenderer } from '@/themes/theme.renderer';
 import { checkThemeRegistrySync } from '@/themes/sync-check';
 import type { SupportedLocale } from '@/i18n/config';
@@ -23,7 +24,7 @@ export default async function TenantPage({ params }: PageProps): Promise<React.J
   const { slug } = await params;
   void checkThemeRegistrySync();
 
-  const menu = await getCachedMenu(slug);
+  const menu = await getCachedMenu(slug)();
   if (!menu) notFound();
 
   const locale = (await getLocale()) as SupportedLocale;
@@ -42,11 +43,18 @@ export default async function TenantPage({ params }: PageProps): Promise<React.J
   );
 }
 
-const getCachedMenu = unstable_cache(
-  async (slug: string) => new PublicMenuService().findBySlug(slug),
-  ['public-menu'],
-  { revalidate: PUBLIC_MENU_REVALIDATE_SECONDS },
-);
+/**
+ * Per-slug cached menu resolver. Tagged with {@link publicMenuTag} so an owner
+ * edit can bust exactly this tenant's entry immediately; the time-based
+ * `revalidate` stays as a safety net.
+ */
+function getCachedMenu(slug: string): () => Promise<Awaited<ReturnType<PublicMenuService['findBySlug']>>> {
+  return unstable_cache(
+    () => new PublicMenuService().findBySlug(slug),
+    ['public-menu', slug],
+    { revalidate: PUBLIC_MENU_REVALIDATE_SECONDS, tags: [publicMenuTag(slug)] },
+  );
+}
 
 async function SuspendedNotice({
   accentColor,

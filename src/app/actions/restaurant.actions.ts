@@ -10,6 +10,7 @@ import {
 } from '@/dtos/restaurant.dto';
 import { RestaurantService } from '@/services/restaurant.service';
 import { requireOwnerRestaurant } from '@/lib/tenant/require-restaurant';
+import { revalidatePublicMenu } from '@/lib/cache/public-menu-cache';
 import { enforceRateLimit } from '@/lib/security/rate-limiter';
 import { toAppError } from '@/lib/errors/error-handler';
 import { logger } from '@/lib/logger';
@@ -27,6 +28,7 @@ export async function updateBrandingAction(
     const parsed = UpdateBrandingSchema.parse(input);
     await new RestaurantService().updateBranding(ctx.restaurantId, parsed);
     revalidatePath('/dashboard/branding');
+    revalidatePublicMenu(ctx.slug);
     return { ok: true, value: undefined };
   } catch (err) {
     return toFailure(err, 'updateBrandingAction');
@@ -42,6 +44,7 @@ export async function updateSettingsAction(
     const parsed = UpdateSettingsSchema.parse(input);
     await new RestaurantService().updateSettings(ctx.restaurantId, parsed);
     revalidatePath('/dashboard/settings');
+    revalidatePublicMenu(ctx.slug);
     return { ok: true, value: undefined };
   } catch (err) {
     return toFailure(err, 'updateSettingsAction');

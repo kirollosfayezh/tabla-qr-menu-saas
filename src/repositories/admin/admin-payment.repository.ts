@@ -11,6 +11,7 @@ export type AdminPaymentRow = Payment & {
   restaurant: { id: string; slug: string; name: string };
   user: { id: string; email: string };
   themePackage: { id: string; name: string } | null;
+  theme: { id: string; name: string } | null;
 };
 
 export class AdminPaymentRepository extends BaseRepository {
@@ -21,6 +22,7 @@ export class AdminPaymentRepository extends BaseRepository {
         restaurant: { select: { id: true, slug: true, name: true } },
         user: { select: { id: true, email: true } },
         themePackage: { select: { id: true, name: true } },
+        theme: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: filters.take,

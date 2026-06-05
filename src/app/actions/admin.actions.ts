@@ -3,18 +3,25 @@
 import { revalidatePath } from 'next/cache';
 import { ZodError } from 'zod';
 import {
+  AssignPlanSchema,
+  ConfirmManualPaymentSchema,
   CreatePackageSchema,
+  DeleteRestaurantSchema,
   CreateThemeSchema,
   DeletePackageSchema,
   DeleteThemeSchema,
   RefundPaymentSchema,
+  SetPaymentMethodSchema,
   SetRestaurantStatusSchema,
   SetUserRoleSchema,
   UpdatePackageSchema,
   UpdateThemeSchema,
+  type AssignPlanDTO,
+  type ConfirmManualPaymentDTO,
   type CreatePackageDTO,
   type CreateThemeDTO,
   type RefundPaymentDTO,
+  type SetPaymentMethodDTO,
   type SetRestaurantStatusDTO,
   type SetUserRoleDTO,
   type UpdatePackageDTO,
@@ -39,6 +46,16 @@ export async function setRestaurantStatusAction(input: SetRestaurantStatusDTO): 
   });
 }
 
+export async function deleteRestaurantAction(input: { restaurantId: string }): Promise<AdminActionResult> {
+  return run('deleteRestaurant', async () => {
+    const actor = await requireAdmin();
+    const parsed = DeleteRestaurantSchema.parse(input);
+    await new AdminService().deleteRestaurant(actor, parsed.restaurantId);
+    revalidatePath('/admin/restaurants');
+    revalidatePath('/admin');
+  });
+}
+
 export async function setUserRoleAction(input: SetUserRoleDTO): Promise<AdminActionResult> {
   return run('setUserRole', async () => {
     const actor = await requireAdmin();
@@ -54,6 +71,28 @@ export async function refundPaymentAction(input: RefundPaymentDTO): Promise<Admi
     const parsed = RefundPaymentSchema.parse(input);
     await new AdminService().refundPayment(actor, parsed.paymentId);
     revalidatePath('/admin/payments');
+  });
+}
+
+export async function confirmManualPaymentAction(input: ConfirmManualPaymentDTO): Promise<AdminActionResult> {
+  return run('confirmManualPayment', async () => {
+    const actor = await requireAdmin();
+    const parsed = ConfirmManualPaymentSchema.parse(input);
+    await new AdminService().confirmManualPayment(actor, parsed.paymentId);
+    revalidatePath('/admin/payments');
+    revalidatePath('/dashboard/billing');
+    revalidatePath('/dashboard/theme');
+  });
+}
+
+export async function setPaymentMethodAction(input: SetPaymentMethodDTO): Promise<AdminActionResult> {
+  return run('setPaymentMethod', async () => {
+    const actor = await requireAdmin();
+    const parsed = SetPaymentMethodSchema.parse(input);
+    await new AdminService().setPaymentMethodActive(actor, parsed.method, parsed.isActive);
+    revalidatePath('/admin/payments');
+    revalidatePath('/dashboard/billing/upgrade');
+    revalidatePath('/dashboard/theme');
   });
 }
 
@@ -108,6 +147,15 @@ export async function deletePackageAction(input: { id: string }): Promise<AdminA
     const parsed = DeletePackageSchema.parse(input);
     await new AdminService().deletePackage(actor, parsed.id);
     revalidatePath('/admin/packages');
+  });
+}
+
+export async function assignPlanAction(input: AssignPlanDTO): Promise<AdminActionResult> {
+  return run('assignPlan', async () => {
+    const actor = await requireAdmin();
+    const parsed = AssignPlanSchema.parse(input);
+    await new AdminService().assignPlan(actor, parsed.restaurantId, parsed.planKey);
+    revalidatePath('/admin/restaurants');
   });
 }
 

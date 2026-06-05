@@ -26,7 +26,7 @@ export default async function SettingsPage(): Promise<React.JSX.Element> {
 
   const planKey = plan?.key ?? 'free_trial';
   const maxItems = plan?.maxItems ?? 5;
-  const maxCategories = plan?.maxCategories ?? 2;
+  const maxCategories = plan?.maxCategories ?? 5;
   const usedItems = items.length;
 
   return (

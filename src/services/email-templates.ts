@@ -30,6 +30,14 @@ interface RefundInput {
   refundTransactionId: string;
 }
 
+interface InstapayAdminInput {
+  restaurantName: string;
+  planName: string;
+  amountCents: number;
+  currencyCode: string;
+  paymentId: string;
+}
+
 const WRAPPER = (body: string): string => `
 <!doctype html>
 <html><body style="font-family:Inter,system-ui,Arial,sans-serif;background:#FAFAFB;padding:24px;color:#0F0F1A">
@@ -41,6 +49,26 @@ const WRAPPER = (body: string): string => `
 
 function money(cents: number, currency: string, locale: 'en' | 'ar'): string {
   return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', { style: 'currency', currency }).format(cents / 100);
+}
+
+/** Escape HTML so admin-authored broadcast text can never inject markup into the email. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Branded wrapper around an admin broadcast. Body is plain text — escaped, newlines → <br>. */
+export function broadcastEmail(input: { subject: string; body: string }): BaseTemplate {
+  const safeBody = escapeHtml(input.body).replace(/\n/g, '<br>');
+  const html = WRAPPER(`
+    <tr><td><h1 style="margin:0 0 12px;font-size:22px">${escapeHtml(input.subject)}</h1></td></tr>
+    <tr><td style="color:#4A4A5E;font-size:14px;line-height:1.6">${safeBody}</td></tr>
+  `);
+  return { subject: input.subject, html, text: input.body };
 }
 
 export function resetPasswordEmail(input: ResetInput): BaseTemplate {
@@ -114,6 +142,23 @@ export function refundEmail(input: RefundInput): BaseTemplate {
     <tr><td style="padding-top:4px;font-family:monospace;font-size:12px"><strong>${tx}:</strong> ${input.refundTransactionId}</td></tr>
   `);
   const text = `${headline}\n\n${total}: ${money(input.amountCents, input.currencyCode, input.locale)}\n${tx}: ${input.refundTransactionId}`;
+  return { subject, html, text };
+}
+
+export function instapayAdminEmail(input: InstapayAdminInput): BaseTemplate {
+  const amount = money(input.amountCents, input.currencyCode, 'en');
+  const subject = `InstaPay proof: ${input.restaurantName}`;
+  const html = WRAPPER(`
+    <tr><td><h1 style="margin:0 0 12px;font-size:22px">InstaPay proof received</h1></td></tr>
+    <tr><td style="color:#4A4A5E;font-size:14px;line-height:1.7">
+      <strong>Restaurant:</strong> ${escapeHtml(input.restaurantName)}<br>
+      <strong>Plan:</strong> ${escapeHtml(input.planName)}<br>
+      <strong>Amount:</strong> ${escapeHtml(amount)}<br>
+      <strong>Payment ID:</strong> <span style="font-family:monospace">${escapeHtml(input.paymentId)}</span>
+    </td></tr>
+    <tr><td style="padding-top:16px;color:#8A8A9A;font-size:12px">The payment screenshot is attached to this email.</td></tr>
+  `);
+  const text = `InstaPay proof received\n\nRestaurant: ${input.restaurantName}\nPlan: ${input.planName}\nAmount: ${amount}\nPayment ID: ${input.paymentId}\n\nThe payment screenshot is attached.`;
   return { subject, html, text };
 }
 

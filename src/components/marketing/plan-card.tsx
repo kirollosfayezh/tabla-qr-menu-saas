@@ -20,10 +20,12 @@ interface Props {
   /** DB-sourced price overrides. When provided, these take precedence over the i18n values. */
   monthlyPriceCents?: number;
   yearlyPriceCents?: number;
+  /** Theme names included in this plan — shown as chips below the feature list. */
+  themes?: string[];
 }
 
 /** Single pricing plan card — shared between landing pricing section and standalone /pricing page. */
-export function PlanCard({ plan, yearly, monthlyPriceCents, yearlyPriceCents }: Props): React.JSX.Element {
+export function PlanCard({ plan, yearly, monthlyPriceCents, yearlyPriceCents, themes }: Props): React.JSX.Element {
   const t = useTranslations('marketing.pricing');
   // DB prices (cents → EGP) take precedence over i18n hardcoded values
   const monthlyEgp = monthlyPriceCents !== undefined ? monthlyPriceCents / 100 : plan.monthlyPrice;
@@ -78,6 +80,19 @@ export function PlanCard({ plan, yearly, monthlyPriceCents, yearlyPriceCents }: 
           </li>
         ))}
       </ul>
+
+      {themes && themes.length > 0 && (
+        <div className="mt-5 border-t border-border-subtle pt-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">Included themes</p>
+          <div className="flex flex-wrap gap-1.5">
+            {themes.map((name) => (
+              <span key={name} className="rounded-full bg-surface-sunken px-2.5 py-1 text-xs font-medium text-text-secondary">
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

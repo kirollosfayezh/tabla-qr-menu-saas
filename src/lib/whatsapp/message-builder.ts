@@ -10,6 +10,7 @@ const EN = {
   customer: 'Customer',
   phone: 'Phone',
   address: 'Address',
+  location: 'Location',
   notes: 'Notes',
   subtotal: 'Subtotal',
   tax: 'Tax',
@@ -27,6 +28,7 @@ const AR = {
   customer: 'العميل',
   phone: 'الهاتف',
   address: 'العنوان',
+  location: 'الموقع',
   notes: 'ملاحظات',
   subtotal: 'المجموع الفرعي',
   tax: 'الضريبة',
@@ -40,12 +42,14 @@ export function buildOrderMessage(input: MessageBuildInput): string {
   const restaurant = localize(input.restaurant.name, input.restaurant.nameAr, input.locale);
   const rows = input.order.lines.map((line) => lineText(line, input.order.currencyCode, input.locale));
   const fulfillment = input.order.fulfillmentType === 'DELIVERY' ? labels.delivery : labels.dineIn;
+  const mapsLink = mapsUrl(input.order.deliveryLat, input.order.deliveryLng);
   const details = [
     `${labels.fulfillment}: ${fulfillment}`,
     input.order.tableNumber ? `${labels.table}: ${input.order.tableNumber}` : null,
     input.order.customerName ? `${labels.customer}: ${input.order.customerName}` : null,
     input.order.customerPhone ? `${labels.phone}: ${input.order.customerPhone}` : null,
     input.order.deliveryAddress ? `${labels.address}: ${input.order.deliveryAddress}` : null,
+    mapsLink ? `${labels.location}: ${mapsLink}` : null,
   ].filter((line): line is string => Boolean(line));
   return [
     `${labels.order} #${input.order.id.slice(0, 8)}`,
@@ -61,6 +65,12 @@ export function buildOrderMessage(input: MessageBuildInput): string {
     '',
     labels.powered,
   ].join('\n');
+}
+
+/** Google Maps link for a pinned delivery location, or null when no coordinates. */
+export function mapsUrl(lat: number | null, lng: number | null): string | null {
+  if (lat == null || lng == null) return null;
+  return `https://maps.google.com/?q=${lat},${lng}`;
 }
 
 export function buildDeepLink(whatsappNumber: string, message: string): { url: string; encodedLength: number } {

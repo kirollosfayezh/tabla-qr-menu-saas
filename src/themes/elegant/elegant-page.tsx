@@ -8,6 +8,7 @@ import { ElegantItemCard } from './elegant-item-card';
 import { ElegantItemModal } from './elegant-item-modal';
 import { PageViewBeacon } from '../classic/page-view-beacon';
 import { CartBar } from '@/app/t/[slug]/cart/cart-bar';
+import { PromoTicker } from '../shared/promo-ticker';
 import { emitAnalyticsEvent } from '@/lib/analytics/emit';
 import { localizedField } from '../helpers';
 import type { MenuItemSnapshot, ThemeProps } from '../theme.types';
@@ -28,9 +29,10 @@ export function ElegantPage({ restaurant, categories, locale }: ThemeProps): Rea
     >
       <PageViewBeacon restaurantId={restaurant.id} />
       <ElegantHeader restaurant={restaurant} locale={locale} />
+      <PromoTicker messages={restaurant.promoMessages} />
       {categories.length > 0 ? <ElegantTabs categories={categories} locale={locale} /> : null}
 
-      <main className="mx-auto w-full max-w-3xl px-5 pt-4">
+      <main className="mx-auto w-full max-w-3xl px-5 pt-4 @5xl:max-w-6xl">
         {categories.length === 0 ? (
           <p className="rounded-none border border-[var(--d-border)] bg-[var(--d-surface)] p-8 text-center font-serif italic text-[var(--d-text-soft)]">
             {t('menuComingSoon')}
@@ -41,7 +43,7 @@ export function ElegantPage({ restaurant, categories, locale }: ThemeProps): Rea
               <h2 className="mb-4 font-serif text-2xl font-normal italic tracking-wide text-[var(--d-primary)]">
                 {localizedField(cat.name, cat.nameAr, locale)}
               </h2>
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-2 gap-3.5 @2xl:grid-cols-3 @5xl:grid-cols-4">
                 {cat.items.map((item) => (
                   <ElegantItemCard
                     key={item.id}

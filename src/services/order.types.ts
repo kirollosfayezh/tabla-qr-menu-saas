@@ -27,6 +27,8 @@ export interface PlacedOrder {
   customerName: string | null;
   customerPhone: string | null;
   deliveryAddress: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   subtotalCents: number;
   taxCents: number;
   serviceCents: number;

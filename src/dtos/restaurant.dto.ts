@@ -5,6 +5,7 @@ import {
   SLUG_MIN_LENGTH,
   SLUG_REGEX,
 } from '@/config/constants';
+import { ThemeOverrideSchema } from './theme-customization.dto';
 
 const HEX_COLOR = /^#([0-9a-fA-F]{6})$/;
 // E.164-ish: leading +, 8–15 digits.
@@ -90,6 +91,8 @@ export const UpdateBrandingSchema = z.object({
   heroPhotos: HeroPhotosArraySchema,
   heroLayout: z.enum(HERO_LAYOUTS).default('featured'),
   heroImageScale: z.coerce.number().int().min(70).max(140).default(100),
+  themeCustomization: ThemeOverrideSchema.default({}),
+  promoMessages: z.string().trim().max(120).array().max(10).default([]),
 });
 export type UpdateBrandingDTO = z.infer<typeof UpdateBrandingSchema>;
 

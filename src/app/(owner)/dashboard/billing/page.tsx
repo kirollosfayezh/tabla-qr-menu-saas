@@ -2,8 +2,8 @@ import { getTranslations } from 'next-intl/server';
 import { PageHeader } from '@/components/owner/page-header';
 import { requireOwnerRestaurant } from '@/lib/tenant/require-restaurant';
 import { RestaurantRepository } from '@/repositories/restaurant.repository';
-import { ThemeRepository } from '@/repositories/theme.repository';
 import { BillingRepository } from '@/repositories/billing.repository';
+import { AdminPlanRepository } from '@/repositories/admin/admin-plan.repository';
 import { PlanCard } from './plan-card';
 import { PaymentMethodCard } from './payment-method-card';
 import { PaymentHistoryTable } from './payment-history-table';
@@ -14,16 +14,17 @@ export default async function BillingPage(): Promise<React.JSX.Element> {
   const t = await getTranslations('owner.billing');
   const ctx = await requireOwnerRestaurant();
 
-  const [restaurant, payments] = await Promise.all([
+  const [restaurant, payments, allPlans] = await Promise.all([
     new RestaurantRepository().findByOwnerId(ctx.userId),
     new BillingRepository().listPayments(ctx.restaurantId),
+    new AdminPlanRepository().listAll(),
   ]);
 
   if (!restaurant) throw new Error('Restaurant missing');
 
-  const theme = restaurant.themeId
-    ? await new ThemeRepository().findById(restaurant.themeId)
-    : null;
+  const currentPlan = allPlans.find((p) => p.key === restaurant.planKey);
+  const maxSortOrder = Math.max(...allPlans.map((p) => p.sortOrder));
+  const canUpgrade = (currentPlan?.sortOrder ?? 0) < maxSortOrder;
 
   return (
     <div className="space-y-6">
@@ -32,8 +33,9 @@ export default async function BillingPage(): Promise<React.JSX.Element> {
       <div className="grid gap-5 lg:grid-cols-2">
         <PlanCard
           status={restaurant.status}
-          themeName={theme?.name ?? null}
-          themeIsFree={theme?.isFree ?? true}
+          planName={currentPlan?.name ?? t('planFree')}
+          yearlyPriceCents={currentPlan?.yearlyPriceCents ?? 0}
+          canUpgrade={canUpgrade}
           currencyCode={restaurant.currencyCode}
         />
         <PaymentMethodCard />

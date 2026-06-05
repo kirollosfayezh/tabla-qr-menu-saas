@@ -1,5 +1,5 @@
 /**
- * Strict security headers applied via middleware to every response.
+ * Strict security headers applied via the edge proxy to every response.
  *
  * Notes:
  * - In development we relax script-src with `'unsafe-eval'` and `'unsafe-inline'`
@@ -18,6 +18,7 @@ const GOOGLE_ACCOUNTS = 'https://accounts.google.com';
 const GOOGLE_APIS = 'https://apis.google.com';
 const GOOGLE_GSTATIC = 'https://www.gstatic.com';
 const PAYMOB = 'https://accept.paymob.com https://accept.paymobsolutions.com';
+const EMAILJS_API = 'https://api.emailjs.com';
 
 export function buildSecurityHeaders({ nonce, isDev }: BuildHeadersOptions): Record<string, string> {
   const scriptSrc = isDev
@@ -30,7 +31,8 @@ export function buildSecurityHeaders({ nonce, isDev }: BuildHeadersOptions): Rec
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' https://fonts.gstatic.com data:`,
     `img-src 'self' data: blob: https:`,
-    `connect-src 'self' https://*.upstash.io ${CF_CHALLENGES} ${GOOGLE_ACCOUNTS} ${PAYMOB}`,
+    `media-src 'self' blob: data:`,
+    `connect-src 'self' https://*.upstash.io ${CF_CHALLENGES} ${GOOGLE_ACCOUNTS} ${PAYMOB} ${EMAILJS_API}`,
     `frame-src 'self' ${CF_CHALLENGES} ${GOOGLE_ACCOUNTS} ${PAYMOB}`,
     `worker-src 'self' blob:`,
     `object-src 'none'`,

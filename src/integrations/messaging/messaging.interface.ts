@@ -8,6 +8,11 @@ export interface EmailMessage {
   subject: string;
   html: string;
   text: string;
+  attachments?: ReadonlyArray<{
+    filename: string;
+    content: string;
+    contentType?: string;
+  }>;
   /** Optional override; default `EMAIL_FROM` env var. */
   from?: string;
 }

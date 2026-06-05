@@ -23,6 +23,7 @@ export function PlanEditor({ plans: initial, themes }: Props): React.JSX.Element
   function onCreated(key: string, name: string, nameAr: string, maxItems: number, maxCategories: number): void {
     setPlans((prev) => [...prev, {
       key, name, nameAr, maxItems, maxCategories,
+      monthlyPriceCents: 0, yearlyPriceCents: 0,
       sortOrder: prev.length + 1, isActive: true,
       createdAt: new Date(), updatedAt: new Date(),
       accessibleThemes: [],
