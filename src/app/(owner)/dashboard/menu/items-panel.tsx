@@ -10,7 +10,6 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ItemCard } from './item-card';
 import { isPendingId } from './use-menu-actions';

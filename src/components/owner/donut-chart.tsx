@@ -16,29 +16,25 @@ export function DonutChart({ slices, size = 140, centerLabel, centerValue }: Pro
   const total = slices.reduce((s, x) => s + x.value, 0) || 1;
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  let offset = 0;
+  const dashes = slices.map((slice) => (slice.value / total) * circumference);
+  const offsets = dashes.map((_, i) => dashes.slice(0, i).reduce((sum, d) => sum + d, 0));
 
   return (
     <div className="flex items-center gap-6">
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg viewBox="0 0 100 100" className="-rotate-90" style={{ width: size, height: size }}>
           <circle cx="50" cy="50" r={radius} fill="none" stroke="var(--surface-sunken)" strokeWidth="14" />
-          {slices.map((slice, i) => {
-            const dash = (slice.value / total) * circumference;
-            const seg = (
-              <circle
-                key={i}
-                cx="50" cy="50" r={radius}
-                fill="none"
-                stroke={slice.color}
-                strokeWidth="14"
-                strokeDasharray={`${dash} ${circumference}`}
-                strokeDashoffset={-offset}
-              />
-            );
-            offset += dash;
-            return seg;
-          })}
+          {slices.map((slice, i) => (
+            <circle
+              key={i}
+              cx="50" cy="50" r={radius}
+              fill="none"
+              stroke={slice.color}
+              strokeWidth="14"
+              strokeDasharray={`${dashes[i]} ${circumference}`}
+              strokeDashoffset={-offsets[i]}
+            />
+          ))}
         </svg>
         {centerValue && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">

@@ -107,7 +107,7 @@ export function InstapayModal({ target, onClose, onSuccess }: Props): React.JSX.
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 14l6 6 10-10" stroke="#047857" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
             <p className="font-semibold text-text-primary">Screenshot received!</p>
-            <p className="text-sm text-text-secondary">We'll activate your {target.kind} within 24 hours after verifying your payment.</p>
+            <p className="text-sm text-text-secondary">We&apos;ll activate your {target.kind} within 24 hours after verifying your payment.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">

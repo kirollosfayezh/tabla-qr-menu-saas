@@ -60,8 +60,10 @@ export function TurnstileWidget({
   const onExpireRef = useRef(onExpire);
 
   // Keep refs in sync with the latest callbacks without retriggering the mount effect.
-  onTokenRef.current = onToken;
-  onExpireRef.current = onExpire;
+  useEffect(() => {
+    onTokenRef.current = onToken;
+    onExpireRef.current = onExpire;
+  }, [onToken, onExpire]);
 
   useEffect(() => {
     let cancelled = false;
