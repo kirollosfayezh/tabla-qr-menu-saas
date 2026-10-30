@@ -7,9 +7,10 @@ import { UserRepository } from '@/repositories/user.repository';
 import { PaymentMethodRepository } from '@/repositories/payment-method.repository';
 import { PaymobAdapter } from '@/integrations/payment/paymob.adapter';
 import { NotFoundError, ValidationError } from '@/lib/errors/errors';
-import { METHOD_ID_TO_KEY, type PaymentMethodId } from '@/lib/payments/payment-methods';
+import type { PaymentMethodId } from '@/lib/payments/payment-methods';
 import { logger } from '@/lib/logger';
 import { sendReceiptEmail, sendRefundEmail } from './payment-emails';
+import { assertPaymentMethodActive } from './payment-method-guard';
 import {
   billingData,
   isSuccess,
@@ -50,7 +51,7 @@ export class PaymentService {
       await this.restaurants.updateTheme(restaurant.id, theme.id);
       return { paid: true, redirectUrl: null };
     }
-    await this.ensurePaymentMethodActive(input.method);
+    await assertPaymentMethodActive(this.paymentMethods, input.method);
     if (input.method === 'instapay') throw new ValidationError('InstaPay is only available for plan upgrades');
     const payment = await this.recordPendingPayment({
       restaurantId: input.restaurantId,
@@ -83,7 +84,7 @@ export class PaymentService {
     email: string;
     method: PaymentMethodId;
   }): Promise<CheckoutResult> {
-    await this.ensurePaymentMethodActive(input.method);
+    await assertPaymentMethodActive(this.paymentMethods, input.method);
     if (input.method === 'instapay') throw new ValidationError('Use submitInstapay for InstaPay payments');
     const restaurant = await this.restaurants.findByOwnerId(input.userId);
     if (!restaurant || restaurant.id !== input.restaurantId) throw new NotFoundError('Restaurant');
@@ -203,62 +204,6 @@ export class PaymentService {
     });
   }
 
-  /**
-   * Register an InstaPay manual payment intent. Creates a PENDING record in the DB
-   * so the admin can identify and activate the plan after verifying the screenshot.
-   */
-  public async submitInstapay(input: {
-    userId: string;
-    restaurantId: string;
-    planKey?: string;
-    themeKey?: string;
-  }): Promise<{ paymentId: string; restaurantName: string; itemName: string; amountCents: number; currencyCode: string }> {
-    await this.ensurePaymentMethodActive('instapay');
-    const restaurant = await this.restaurants.findByOwnerId(input.userId);
-    if (!restaurant || restaurant.id !== input.restaurantId) throw new NotFoundError('Restaurant');
-    const target = input.planKey
-      ? await this.instapayPlanTarget(input.planKey)
-      : await this.instapayThemeTarget(input.themeKey);
-    const payment = await this.payments.create({
-      restaurantId: input.restaurantId,
-      userId: input.userId,
-      amountCents: target.amountCents,
-      currencyCode: restaurant.currencyCode,
-      themeId: target.themeId,
-      planKey: target.planKey,
-      rawWebhookPayload: target.rawWebhookPayload,
-    });
-    return {
-      paymentId: payment.id,
-      restaurantName: restaurant.name,
-      itemName: target.itemName,
-      amountCents: target.amountCents,
-      currencyCode: restaurant.currencyCode,
-    };
-  }
-
-  public async confirmManualPayment(paymentId: string): Promise<Payment> {
-    const payment = await this.payments.findById(paymentId);
-    if (!payment) throw new NotFoundError('Payment');
-    if (payment.status !== 'PENDING') throw new ValidationError('Only PENDING payments can be confirmed');
-    await this.payments.updateStatus(payment.id, 'SUCCESS', { kind: 'manual_instapay_confirmed' });
-    const planKey = await this.payments.findPlanKeyFor(payment.id);
-    if (planKey) {
-      await this.restaurants.activatePlan(payment.restaurantId, planKey);
-      const refreshed = await this.payments.findById(paymentId);
-      if (!refreshed) throw new NotFoundError('Payment');
-      return refreshed;
-    }
-    const themeId = await this.payments.findThemeIdFor(payment.id);
-    if (themeId) {
-      await this.restaurants.updateTheme(payment.restaurantId, themeId);
-      const refreshed = await this.payments.findById(paymentId);
-      if (!refreshed) throw new NotFoundError('Payment');
-      return refreshed;
-    }
-    throw new ValidationError('Payment is missing a plan or theme target');
-  }
-
   /** Insert a PENDING payment for either a theme or a plan upgrade (exactly one of themeId/planKey). */
   private recordPendingPayment(input: {
     restaurantId: string;
@@ -272,52 +217,5 @@ export class PaymentService {
       ? { kind: 'theme_checkout', themeId: input.themeId }
       : { kind: 'plan_checkout', planKey: input.planKey };
     return this.payments.create({ ...input, rawWebhookPayload: meta });
-  }
-
-  private async ensurePaymentMethodActive(method: PaymentMethodId): Promise<void> {
-    const activeKeys = await this.paymentMethods.listActiveKeys();
-    if (!activeKeys.includes(METHOD_ID_TO_KEY[method])) {
-      throw new ValidationError('This payment method is currently unavailable');
-    }
-  }
-
-  private async instapayPlanTarget(planKey: string | undefined): Promise<{
-    planKey: string;
-    themeId: null;
-    itemName: string;
-    amountCents: number;
-    rawWebhookPayload: { kind: 'instapay_pending'; planKey: string };
-  }> {
-    if (!planKey) throw new ValidationError('Plan is required');
-    const plan = await this.plans.findByKey(planKey);
-    if (!plan) throw new NotFoundError('Plan');
-    if (plan.monthlyPriceCents <= 0) throw new ValidationError('Plan is not purchasable');
-    return {
-      planKey: plan.key,
-      themeId: null,
-      itemName: plan.name,
-      amountCents: plan.monthlyPriceCents,
-      rawWebhookPayload: { kind: 'instapay_pending', planKey: plan.key },
-    };
-  }
-
-  private async instapayThemeTarget(themeKey: string | undefined): Promise<{
-    planKey: null;
-    themeId: string;
-    itemName: string;
-    amountCents: number;
-    rawWebhookPayload: { kind: 'instapay_theme_pending'; themeKey: string; themeId: string };
-  }> {
-    if (!themeKey) throw new ValidationError('Theme is required');
-    const theme = await this.themes.findByKey(themeKey);
-    if (!theme || !theme.isActive) throw new NotFoundError('Theme');
-    if (theme.isFree || theme.priceCents <= 0) throw new ValidationError('Theme is not purchasable');
-    return {
-      planKey: null,
-      themeId: theme.id,
-      itemName: theme.name,
-      amountCents: theme.priceCents,
-      rawWebhookPayload: { kind: 'instapay_theme_pending', themeKey: theme.key, themeId: theme.id },
-    };
   }
 }

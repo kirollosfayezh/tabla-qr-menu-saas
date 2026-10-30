@@ -1,4 +1,4 @@
-import type { Payment, PaymentMethodKey, PaymentMethodSetting, Prisma, Restaurant, RestaurantStatus, Theme, ThemePackage, User, UserRole } from '@prisma/client';
+import type { Payment, PaymentMethodKey, PaymentMethodSetting, Restaurant, RestaurantStatus, Theme, ThemePackage, User, UserRole } from '@prisma/client';
 import { AdminRestaurantRepository } from '@/repositories/admin/admin-restaurant.repository';
 import { AdminUserRepository } from '@/repositories/admin/admin-user.repository';
 import { AdminPaymentRepository } from '@/repositories/admin/admin-payment.repository';
@@ -7,6 +7,8 @@ import { PaymentRepository } from '@/repositories/payment.repository';
 import { PaymentMethodRepository } from '@/repositories/payment-method.repository';
 import { AuditLogService } from './audit-log.service';
 import { PaymentService } from './payment.service';
+import { ManualPaymentService } from './manual-payment.service';
+import { toPackageCreateData, toPackageUpdateData, toThemeCreateData, toThemeUpdateData } from './admin-catalog.mappers';
 import { ForbiddenError, NotFoundError } from '@/lib/errors/errors';
 import type { AdminContext } from '@/lib/admin/require-admin';
 import type {
@@ -33,6 +35,7 @@ export class AdminService {
     private readonly paymentService = new PaymentService(),
     private readonly paymentRepo = new PaymentRepository(),
     private readonly paymentMethods = new PaymentMethodRepository(),
+    private readonly manualPayments = new ManualPaymentService(),
   ) {}
 
   public async setRestaurantStatus(
@@ -109,7 +112,7 @@ export class AdminService {
   }
 
   public async confirmManualPayment(actor: AdminContext, paymentId: string): Promise<Payment> {
-    const refreshed = await this.paymentService.confirmManualPayment(paymentId);
+    const refreshed = await this.manualPayments.confirmManualPayment(paymentId);
     await this.audit.record(
       actor,
       'payment.manual_confirm',
@@ -141,37 +144,13 @@ export class AdminService {
   }
 
   public async createTheme(actor: AdminContext, input: CreateThemeDTO): Promise<Theme> {
-    const created = await this.themes.create({
-      key: input.key,
-      name: input.name,
-      nameAr: input.nameAr || null,
-      description: input.description || null,
-      descriptionAr: input.descriptionAr || null,
-      previewImageUrl: input.previewImageUrl || null,
-      design: input.design as Prisma.InputJsonValue,
-      isFree: input.isFree,
-      priceCents: input.priceCents,
-      isActive: input.isActive,
-      sortOrder: input.sortOrder,
-    });
+    const created = await this.themes.create(toThemeCreateData(input));
     await this.audit.record(actor, 'theme.create', { type: 'theme', id: created.id }, { key: created.key });
     return created;
   }
 
   public async updateTheme(actor: AdminContext, input: UpdateThemeDTO): Promise<Theme> {
-    const updated = await this.themes.update(input.id, {
-      key: input.key,
-      name: input.name,
-      nameAr: input.nameAr === '' ? null : input.nameAr,
-      description: input.description === '' ? null : input.description,
-      descriptionAr: input.descriptionAr === '' ? null : input.descriptionAr,
-      previewImageUrl: input.previewImageUrl === '' ? null : input.previewImageUrl,
-      design: input.design ? (input.design as Prisma.InputJsonValue) : undefined,
-      isFree: input.isFree,
-      priceCents: input.priceCents,
-      isActive: input.isActive,
-      sortOrder: input.sortOrder,
-    });
+    const updated = await this.themes.update(input.id, toThemeUpdateData(input));
     await this.audit.record(actor, 'theme.update', { type: 'theme', id: input.id });
     return updated;
   }
@@ -183,30 +162,13 @@ export class AdminService {
   }
 
   public async createPackage(actor: AdminContext, input: CreatePackageDTO): Promise<ThemePackage> {
-    const created = await this.themes.createPackage({
-      name: input.name,
-      nameAr: input.nameAr || null,
-      description: input.description || null,
-      descriptionAr: input.descriptionAr || null,
-      priceCents: input.priceCents,
-      currencyCode: input.currencyCode,
-      themeIds: input.themeIds,
-    });
+    const created = await this.themes.createPackage(toPackageCreateData(input));
     await this.audit.record(actor, 'package.create', { type: 'package', id: created.id });
     return created;
   }
 
   public async updatePackage(actor: AdminContext, input: UpdatePackageDTO): Promise<ThemePackage> {
-    const updated = await this.themes.updatePackage(input.id, {
-      name: input.name,
-      nameAr: input.nameAr === '' ? null : input.nameAr,
-      description: input.description === '' ? null : input.description,
-      descriptionAr: input.descriptionAr === '' ? null : input.descriptionAr,
-      priceCents: input.priceCents,
-      currencyCode: input.currencyCode,
-      isActive: input.isActive,
-      themeIds: input.themeIds,
-    });
+    const updated = await this.themes.updatePackage(input.id, toPackageUpdateData(input));
     await this.audit.record(actor, 'package.update', { type: 'package', id: input.id });
     return updated;
   }

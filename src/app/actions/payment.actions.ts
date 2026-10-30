@@ -9,6 +9,7 @@ import { toAppError } from '@/lib/errors/error-handler';
 import { logger } from '@/lib/logger';
 import { enforceRateLimit } from '@/lib/security/rate-limiter';
 import { requireOwnerRestaurant } from '@/lib/tenant/require-restaurant';
+import { ManualPaymentService } from '@/services/manual-payment.service';
 import { PaymentService } from '@/services/payment.service';
 
 export type PaymentActionResult<T = undefined> =
@@ -87,7 +88,7 @@ export async function submitInstapayAction(
     const ip = await clientIp();
     await enforceRateLimit('payment', `instapay:${ctx.userId}:${ip}`);
     const parsed = SubmitInstapaySchema.parse(input);
-    const result = await new PaymentService().submitInstapay({
+    const result = await new ManualPaymentService().submitInstapay({
       userId: ctx.userId,
       restaurantId: ctx.restaurantId,
       planKey: parsed.planKey,
