@@ -1,5 +1,7 @@
 # Tabla — QR Menu SaaS
 
+[![CI](https://github.com/kirollosfayezh/tabla-qr-menu-saas/actions/workflows/ci.yml/badge.svg)](https://github.com/kirollosfayezh/tabla-qr-menu-saas/actions/workflows/ci.yml)
+
 A multi-tenant SaaS that lets restaurants publish a bilingual (English/Arabic) digital menu behind a QR code and take dine-in or delivery orders through WhatsApp.
 
 ## Overview
@@ -62,6 +64,8 @@ Audience: restaurant and café owners (tenants), their diners, and the platform 
 
 The codebase follows a layered structure: thin App Router pages and server actions call services, services hold business logic, and repositories are the only layer that talks to Prisma. External providers sit behind small adapter interfaces.
 
+Services receive their repositories and adapters through constructor parameters (defaulting to the real implementations), which is what lets the unit tests run them against in-memory fakes. Money is always handled as integer minor units (`priceCents`, `totalCents`), and order totals are recomputed on the server from the published menu: the client only sends item ids, quantities and option ids.
+
 ```mermaid
 flowchart LR
   Diner[Diner browser] --> Proxy[proxy.ts<br/>tenant rewrite, rate limit, CSP]
@@ -77,6 +81,7 @@ flowchart LR
 ```
 prisma/
   schema.prisma        Data model (users, restaurants, menu, orders, payments, plans, themes)
+  migrations/          Baseline migration (0000_init) generated from the schema
   seed.ts              Seeds themes and plans
 src/
   app/                 Routes: (auth), (owner)/dashboard, (admin)/admin, t/[slug] storefront,
@@ -88,17 +93,19 @@ src/
   integrations/        Adapters for payment, storage, messaging and image processing
   lib/                 Auth, security (headers, rate limiter, Turnstile), tenant, cache, errors, logger
   repositories/        Prisma data access
-  services/            Business logic (menu, orders, payments, themes, admin, analytics)
+  services/            Business logic (menu, orders, payments, InstaPay, themes, admin, analytics)
+                       with *.test.ts files next to the code they cover
   themes/              Theme registry and diner theme renderers
   proxy.ts             Edge proxy: tenant routing, rate limiting, security headers
+tests/                 Shared test fixtures and repository fakes
 docs/                  Production-readiness audit and agent notes
 ```
 
 ## Getting started
 
 ### Prerequisites
-- Node.js 20+
-- pnpm
+- Node.js 22 (see `.nvmrc`)
+- pnpm 10
 - A PostgreSQL database
 - An Upstash Redis database (rate limiting runs on every request)
 
@@ -108,7 +115,7 @@ docs/                  Production-readiness audit and agent notes
 pnpm install
 cp .env.example .env.local     # fill in values; the db:* scripts read .env.local
 pnpm db:generate               # generate the Prisma client
-pnpm db:push                   # apply the schema to the database
+pnpm db:migrate                # apply migrations (prisma migrate dev)
 pnpm db:seed                   # seed themes and plans
 pnpm dev                       # http://localhost:3000
 ```
@@ -120,7 +127,9 @@ pnpm dev                       # http://localhost:3000
 | `pnpm build` / `pnpm start` | Production build and server |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm test` / `pnpm test:watch` | Vitest unit tests |
 | `pnpm db:migrate` | `prisma migrate dev` |
+| `pnpm db:push` | Push the schema without a migration (prototyping only) |
 | `pnpm db:studio` | Prisma Studio |
 
 ## Environment variables
@@ -147,11 +156,43 @@ See `.env.example` for placeholders. Server variables are validated in `src/conf
 | `NEXT_PUBLIC_EMAILJS_SERVICE_ID`, `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`, `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY` | No | InstaPay request notification |
 | `NODE_ENV`, `LOG_LEVEL` | No | Runtime mode and pino log level (default `info`) |
 
+## Testing
+
+```bash
+pnpm test
+```
+
+The suite is [Vitest](https://vitest.dev) running in plain Node: no database, Redis or network. `vitest.config.mts` supplies placeholder environment variables because `src/config/env.ts` validates them at import time. It focuses on the code where a bug costs money or leaks data:
+
+| Area | File | What it checks |
+|---|---|---|
+| Order placement | `src/services/order.service.test.ts` | Server-side pricing, tax and service charge with rounding, option price deltas, option-group `minSelect`/`maxSelect`/`required` rules, foreign option ids, unavailable items, tenant mismatch, suspended restaurants, dine-in vs delivery fields |
+| Paymob signature | `src/integrations/payment/paymob-hmac.test.ts` | HMAC-SHA512 against a reference signature computed independently, tampered fields, malformed signatures, missing secret fails closed |
+| Paymob webhook | `src/services/payment.service.test.ts` | Audit-first logging, idempotent replays, plan vs theme activation from the stored target, declined payments, disabled methods, refunds |
+| InstaPay | `src/services/manual-payment.service.test.ts` | DB-priced pending payments, non-purchasable targets, double confirmation |
+| Input validation | `src/dtos/dtos.test.ts` | Order, auth, payment, option-group and slug Zod schemas |
+| Helpers | `host-parser`, `message-builder`, `plans`, `paymob-payload`, `admin-catalog.mappers` tests | Tenant subdomain parsing, WhatsApp message and deep link, trial expiry, payload parsing, DTO mapping |
+
+CI (`.github/workflows/ci.yml`) runs install, `prisma generate`, lint, typecheck, tests and a production build on every push and pull request, using placeholder environment variables only.
+
+## Design decisions
+
+- **Layered services with constructor injection.** Pages and server actions stay thin; services own the rules and take repositories as constructor arguments. The cost is some boilerplate per service; the benefit is that order and payment logic can be tested without Prisma.
+- **Server recomputes every price.** The cart sends ids and quantities, never amounts. `OrderService` rebuilds each line from the published menu, validates option groups and applies tax and service charge in integer cents, so a tampered client cannot change what the restaurant is told to charge.
+- **WhatsApp instead of an in-app order pipeline.** Orders are stored, then handed to the restaurant as a pre-filled WhatsApp message. This avoids building a kitchen display or notification system for small restaurants that already run on WhatsApp, at the price of no in-app order status tracking.
+- **Webhook state machine, not trust.** Paymob callbacks are HMAC-verified with a constant-time compare, every call is written to an append-only audit table first, terminal payments short-circuit, and the plan or theme to activate is read from the payment row rather than the payload.
+- **One Next.js app for storefront, dashboard and admin.** Tenants are resolved in `src/proxy.ts` from the subdomain or path, which keeps deployment to a single service. The trade-off is that the admin area shares a runtime with the public storefront, so it relies on role checks and rate limiting rather than network isolation.
+- **Optional integrations at boot.** Payments, storage, email and Turnstile can be left unset so the app runs locally with only Postgres and Upstash. The risk, noted below, is that a misconfigured production deployment also starts.
+
 ## Notes and limitations
 
-- No automated tests yet; there is no test runner or `test` script.
-- The schema is applied with `prisma db push`; there is no migration history yet.
+- Migration history starts at the `0000_init` baseline. A database created earlier with `db push` should be marked as baselined once with `prisma migrate resolve --applied 0000_init`.
+- Tests are unit-level with faked repositories; there are no integration tests against a real Postgres yet.
 - Payments, storage, email and Turnstile are optional at boot, so a misconfigured deployment can start without them.
 - The Supabase client helpers in `src/lib/supabase/` are not imported by the app; data access goes through Prisma.
 - The InstaPay notification is sent from the browser via EmailJS.
 - A production-readiness audit with the open punch-list is in [`docs/production-readiness.md`](docs/production-readiness.md).
+
+## License
+
+[MIT](LICENSE)
