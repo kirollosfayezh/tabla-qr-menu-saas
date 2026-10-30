@@ -7,6 +7,7 @@ import {
   payloadJson,
   readProviderOrderId,
   readTransactionId,
+  unwrapPaymobTransaction,
 } from './paymob-payload';
 
 describe('paymob payload helpers', () => {
@@ -43,5 +44,28 @@ describe('paymob payload helpers', () => {
 
   it('fills Paymob billing data around the owner email', () => {
     expect(billingData('owner@example.com')).toMatchObject({ email: 'owner@example.com', country: 'EG' });
+  });
+});
+
+describe('unwrapPaymobTransaction', () => {
+  const tx = { id: 987654, success: true, pending: false, order: { id: 123456 } };
+
+  it("unwraps Paymob's processed-callback envelope { type, obj }", () => {
+    const tx2 = unwrapPaymobTransaction({ type: 'TRANSACTION', obj: tx });
+    expect(tx2).toBe(tx);
+    expect(readProviderOrderId(tx2)).toBe('123456');
+    expect(readTransactionId(tx2)).toBe('987654');
+    expect(isSuccess(tx2)).toBe(true);
+  });
+
+  it('passes a bare transaction through unchanged', () => {
+    expect(unwrapPaymobTransaction(tx)).toBe(tx);
+  });
+
+  it('leaves non-object bodies and a non-object obj alone', () => {
+    expect(unwrapPaymobTransaction(null)).toBeNull();
+    expect(unwrapPaymobTransaction('x')).toBe('x');
+    const odd = { type: 'TRANSACTION', obj: 'nope' };
+    expect(unwrapPaymobTransaction(odd)).toBe(odd);
   });
 });

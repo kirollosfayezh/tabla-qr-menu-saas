@@ -25,6 +25,14 @@ export function billingData(email: string): PaymobBillingData {
   };
 }
 
+/**
+ * Paymob's "transaction processed" callback wraps the transaction as `{ type: 'TRANSACTION', obj }`,
+ * and the HMAC is computed over `obj`'s fields. Accept that envelope as well as a bare transaction.
+ */
+export function unwrapPaymobTransaction(body: unknown): unknown {
+  return isRecord(body) && isRecord(body.obj) ? body.obj : body;
+}
+
 export function readProviderOrderId(payload: unknown): string {
   const order = isRecord(payload) ? payload.order : null;
   if (isRecord(order) && (typeof order.id === 'number' || typeof order.id === 'string')) return String(order.id);

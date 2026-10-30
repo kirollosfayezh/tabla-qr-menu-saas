@@ -5,12 +5,13 @@ import { verifyPaymobHmac } from '@/integrations/payment/paymob-hmac';
 import { ForbiddenError } from '@/lib/errors/errors';
 import { enforceRateLimit } from '@/lib/security/rate-limiter';
 import { PaymentService } from '@/services/payment.service';
+import { unwrapPaymobTransaction } from '@/services/paymob-payload';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const ip = await clientIp();
     await enforceRateLimit('webhook', `paymob:${ip}`);
-    const payload = await req.json();
+    const payload = unwrapPaymobTransaction(await req.json());
     const hmac = req.nextUrl.searchParams.get('hmac');
     if (!verifyPaymobHmac(payload, hmac)) {
       // Audit the attempt before refusing.

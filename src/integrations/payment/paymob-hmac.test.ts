@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { verifyPaymobHmac } from './paymob-hmac';
+import { unwrapPaymobTransaction } from '@/services/paymob-payload';
 
 /**
  * Reference vector computed independently (Python hmac/sha512) over Paymob's documented
@@ -37,6 +38,12 @@ function transaction(): Record<string, unknown> {
 describe('verifyPaymobHmac', () => {
   it('accepts the signature Paymob would send for this transaction', () => {
     expect(verifyPaymobHmac(transaction(), EXPECTED)).toBe(true);
+  });
+
+  it("verifies Paymob's real callback shape once the { type, obj } envelope is unwrapped", () => {
+    const body = { type: 'TRANSACTION', obj: transaction() };
+    expect(verifyPaymobHmac(body, EXPECTED)).toBe(false);
+    expect(verifyPaymobHmac(unwrapPaymobTransaction(body), EXPECTED)).toBe(true);
   });
 
   it('ignores fields that are not part of the signed key list', () => {
