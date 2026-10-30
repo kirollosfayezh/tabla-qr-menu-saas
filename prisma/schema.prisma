@@ -1,5 +1,5 @@
 // Prisma schema — QR Menu SaaS
-// Source of truth for the data model. See plan.md §2.
+// Source of truth for the data model.
 
 generator client {
   provider = "prisma-client-js"

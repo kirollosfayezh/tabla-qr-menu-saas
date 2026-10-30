@@ -1,5 +1,6 @@
 {
-  "name": "web",
+  "name": "tabla",
+  "description": "Multi-tenant QR menu SaaS for restaurants: bilingual menus, WhatsApp ordering, Paymob billing.",
   "version": "0.1.0",
   "private": true,
   "scripts": {
